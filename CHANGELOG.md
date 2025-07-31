@@ -8,68 +8,74 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Comprehensive documentation (README.md, CONTRIBUTING.md, CHANGELOG.md)
-- Build optimizations for faster compilation
-- Conditional logging features
-- Improved error handling and troubleshooting guides
+- Production build script (`build-production.ps1`) for automated builds
+- Email functionality with SMTP support for password resets
+- Comprehensive role-based access control (Admin, Staff, Viewer)
+- Password reset functionality with token-based authentication
+- Production-ready documentation updates
 
 ### Changed
-- Optimized Rust compilation settings
-- Updated Next.js configuration
-- Cleaned up package.json scripts
-- Enhanced build scripts for better performance
+- Optimized Rust compilation settings for production builds
+- Updated Next.js configuration for better performance
+- Enhanced build scripts for automated production deployment
+- Improved error handling and user feedback
 
 ### Fixed
-- TOML parsing errors in Cargo.toml
-- Invalid Next.js configuration options
-- Build script issues
-- Dependency optimization problems
+- Staff role permissions and dashboard access issues
+- Case sensitivity issues with user roles
+- Email sending functionality in production environment
+- Build optimization and linking issues on Windows
+- Database initialization and user permission handling
 
 ## [1.0.0] - 2024-01-XX
 
 ### Added
 - Initial release of OSSMS
-- User authentication and management
-- Inventory management system
-- Stock movement tracking
-- Reporting functionality
-- Cross-platform desktop application
-- SQLite database backend
-- Modern React/Next.js frontend
+- User authentication and management with role-based access
+- Inventory management system with categories and subcategories
+- Stock movement tracking with detailed history
+- Reporting functionality (low-stock alerts, movement reports)
+- Cross-platform desktop application (Windows, macOS, Linux)
+- SQLite database backend with automatic initialization
+- Modern React/Next.js frontend with Tailwind CSS
 - Tauri desktop framework integration
+- Password reset functionality with email notifications
+- Production build automation
 
 ### Features
 - **User Management**
   - User registration and authentication
-  - Role-based access control
+  - Role-based access control (Admin, Staff, Viewer)
   - Password hashing with bcrypt
   - User profile management
+  - Password reset via email with SMTP support
 
 - **Inventory Management**
   - Add, edit, and delete supplies
   - Category and subcategory organization
   - Quantity tracking with minimum thresholds
   - Location and supplier information
-  - Cost tracking
+  - Cost tracking and management
 
 - **Stock Movement**
-  - Stock in/out tracking
-  - Detailed history with timestamps
-  - User attribution for actions
+  - Stock in/out tracking with timestamps
+  - Detailed history with user attribution
   - Notes and reasons for movements
+  - Historical data analysis
 
 - **Reporting**
-  - Low stock alerts
+  - Low stock alerts and notifications
   - Stock movement reports
   - Historical data analysis
   - Export functionality
 
 - **Technical Features**
   - Offline-first architecture
-  - Local SQLite database
+  - Local SQLite database with automatic setup
   - Cross-platform compatibility
-  - Modern UI with Tailwind CSS
-  - Responsive design
+  - Modern UI with Tailwind CSS and shadcn/ui
+  - Responsive design for desktop applications
+  - Production-ready build system
 
 ### Technical Stack
 - **Frontend**: Next.js 14, React 18, TypeScript
@@ -77,7 +83,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Database**: SQLite with rusqlite
 - **UI**: Tailwind CSS, shadcn/ui components
 - **Authentication**: bcrypt password hashing
+- **Email**: SMTP support with lettre
 - **Build**: Optimized for desktop deployment
+
+### User Roles
+- **Admin**: Full system access and user management
+- **Staff**: Inventory management and reporting access
+- **Viewer**: Read-only access to inventory and reports
 
 ---
 
@@ -88,6 +100,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Complete inventory management system
 - Cross-platform desktop application
 - Production-ready build system
+- Email functionality for password resets
+- Comprehensive role-based access control
 
 ---
 
@@ -97,6 +111,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - No migration required for new installations
 - Database schema is automatically created
 - Sample data is seeded on first run
+- User roles are automatically assigned based on database entries
 
 ---
 

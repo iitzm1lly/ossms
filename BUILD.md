@@ -6,7 +6,10 @@ This guide explains how to build the OSSMS application efficiently and troublesh
 
 ### Windows
 ```powershell
-# Run the clean build script
+# Production build (Recommended)
+.\build-production.ps1
+
+# Or use the clean build script
 .\build.ps1
 
 # Or use npm scripts
@@ -35,6 +38,39 @@ npm run tauri:build:clean
 | `npm run tauri:build` | Tauri build | Production build |
 | `npm run tauri:build:clean` | Clean Tauri build | Remove build artifacts |
 | `npm run tauri:build:fresh` | Fresh Tauri build | Complete rebuild |
+| `.\build-production.ps1` | Production build script | Automated production build |
+
+## 🏭 Production Build
+
+### Automated Production Build (Recommended)
+The `build-production.ps1` script provides a complete, automated production build process:
+
+```powershell
+# Run the production build script
+.\build-production.ps1
+```
+
+This script:
+- Cleans previous builds
+- Installs dependencies
+- Builds the frontend
+- Builds the Tauri application in release mode
+- Provides clear success/failure feedback
+
+### Manual Production Build
+If you prefer manual control:
+
+```bash
+# 1. Install dependencies
+npm install
+
+# 2. Build the frontend
+npm run build
+
+# 3. Build the Tauri application
+cd src-tauri
+cargo build --release
+```
 
 ## 🧹 What Gets Cleaned
 
@@ -59,6 +95,7 @@ npm run tauri:build:clean
 - **Incremental builds**: Faster subsequent builds
 - **Dependency optimization**: Skips optimization for dependencies in development
 - **Conditional features**: Logging only enabled when needed
+- **Release optimizations**: Full optimization for production builds
 
 ### Next.js Optimizations
 - **Memory allocation**: 12GB heap size for large builds
@@ -142,20 +179,18 @@ cd ..
 - **Cause**: Using non-existent Tauri features
 - **Fix**: Remove or update to correct feature names
 
-## 📦 Production Build
+#### "linking with rust-lld failed"
+- **Cause**: Missing Tauri CLI or linker configuration
+- **Fix**: Install Tauri CLI and ensure proper linker configuration
 
-For production builds, use the optimized configuration:
+## 📦 Production Build Features
 
-```bash
-# Production build with optimizations
-npm run tauri:build:fresh
-```
-
-This will:
-- Enable all optimizations
-- Strip debug symbols
-- Enable LTO (Link Time Optimization)
-- Minimize bundle size
+The production build includes:
+- **Optimized binaries**: Stripped debug symbols and optimized for performance
+- **Email functionality**: SMTP support for password resets
+- **Role-based access**: Complete Admin, Staff, and Viewer role support
+- **Database optimization**: SQLite with proper indexing
+- **Security features**: Password hashing and secure authentication
 
 ## 🔄 Continuous Integration
 
@@ -174,4 +209,5 @@ For CI/CD pipelines, use:
 - The database is automatically initialized on first run
 - Sample data is seeded only if it doesn't exist
 - Build scripts preserve user data by default
-- All builds are reproducible and deterministic 
+- All builds are reproducible and deterministic
+- Production builds are optimized for deployment 

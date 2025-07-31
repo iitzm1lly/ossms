@@ -4,10 +4,11 @@ A modern, cross-platform desktop application for managing office supplies and in
 
 ## 🚀 Features
 
-- **User Management**: Secure authentication and role-based access control
+- **User Management**: Secure authentication and role-based access control (Admin, Staff, Viewer)
 - **Inventory Management**: Track supplies, quantities, and locations
 - **Stock Movement**: Monitor stock in/out with detailed history
 - **Reporting**: Generate low-stock alerts and movement reports
+- **Email Notifications**: Password reset functionality with SMTP support
 - **Cross-Platform**: Works on Windows, macOS, and Linux
 - **Offline-First**: Local SQLite database for reliable operation
 - **Modern UI**: Beautiful, responsive interface built with Tailwind CSS
@@ -75,7 +76,13 @@ npm run tauri dev
 
 ### Production Build
 ```bash
-npm run tauri build
+# Using the production build script (Recommended)
+.\build-production.ps1
+
+# Or manually
+npm run build
+cd src-tauri
+cargo build --release
 ```
 
 ### Clean Build (Recommended)
@@ -97,6 +104,7 @@ npm run tauri build
 | `npm run tauri:build` | Tauri build | Production build |
 | `npm run tauri:build:clean` | Clean Tauri build | Remove build artifacts |
 | `npm run tauri:build:fresh` | Fresh Tauri build | Complete rebuild |
+| `.\build-production.ps1` | Production build script | Automated production build |
 
 ## 🏗️ Project Structure
 
@@ -127,6 +135,18 @@ NEXT_PUBLIC_APP_NAME=OSSMS
 NEXT_PUBLIC_APP_VERSION=1.0.0
 ```
 
+### Email Configuration (Optional)
+For password reset functionality, set these environment variables:
+```env
+SMTP_EMAIL=your-email@gmail.com
+SMTP_PASSWORD=your-app-password
+```
+
+**Note**: For Gmail, you need to:
+1. Enable 2-Factor Authentication
+2. Generate an App Password (16 characters, no spaces)
+3. Use the App Password as `SMTP_PASSWORD`
+
 ### Database
 The application uses SQLite for data storage. The database is automatically created at:
 - **Windows**: `%LOCALAPPDATA%\.ossms\ossms.db`
@@ -156,7 +176,13 @@ The database schema is defined in `src-tauri/src/database.rs`. Sample data is au
 
 ### Building for Distribution
 ```bash
-npm run tauri build
+# Automated production build
+.\build-production.ps1
+
+# Or manual build
+npm run build
+cd src-tauri
+cargo build --release
 ```
 
 The executable will be created in `src-tauri/target/release/`:
@@ -190,11 +216,14 @@ rm ~/.local/share/.ossms/ossms.db
 - **"Failed to parse Cargo.toml"**: Check for duplicate sections
 - **"Invalid next.config.mjs"**: Remove deprecated options
 - **"jobs may not be 0"**: Fix `.cargo/config.toml` settings
+- **"linking with rust-lld failed"**: Ensure Tauri CLI is installed
 
 ## 📚 API Reference
 
 ### Authentication
 - `POST /api/login` - User authentication
+- `POST /api/forgot-password` - Request password reset
+- `POST /api/reset-password` - Reset password with token
 - `GET /api/users` - Get all users
 - `POST /api/users` - Create new user
 
@@ -216,9 +245,14 @@ rm ~/.local/share/.ossms/ossms.db
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+### Logo Usage
+This software includes logos from the University of Santo Tomas and the College of Information and Computing Sciences. These logos are used for educational purposes only and are not part of the MIT license. See [LOGO_LICENSE.md](LOGO_LICENSE.md) for detailed usage guidelines and restrictions.
 
 ## 🆘 Support
 

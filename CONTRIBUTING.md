@@ -89,6 +89,7 @@ cargo clippy
 - Verify database operations
 - Check error handling scenarios
 - Test on different operating systems
+- Test email functionality with SMTP
 
 ## 📦 Building and Testing
 
@@ -99,6 +100,10 @@ npm run tauri dev
 
 ### Production Build
 ```bash
+# Automated production build (Recommended)
+.\build-production.ps1
+
+# Or manual production build
 npm run tauri:build:clean
 ```
 
@@ -172,6 +177,12 @@ export function Component({ prop1, prop2 }: ComponentProps) {
 - Implement proper error handling
 - Use secure password hashing (bcrypt)
 
+### Email Security
+- Use environment variables for SMTP credentials
+- Implement proper email validation
+- Use secure SMTP connections
+- Handle email errors gracefully
+
 ## 📚 Documentation
 
 ### Code Documentation
@@ -184,6 +195,7 @@ export function Component({ prop1, prop2 }: ComponentProps) {
 - Update user guides for new features
 - Add screenshots for UI changes
 - Document configuration options
+- Update production build documentation
 
 ## 🚀 Pull Request Process
 
@@ -192,11 +204,13 @@ export function Component({ prop1, prop2 }: ComponentProps) {
    - Test on multiple operating systems
    - Verify all functionality works
    - Check for regressions
+   - Test email functionality if applicable
 
 2. **Update documentation**
    - Update README.md if needed
    - Add inline code comments
    - Update API documentation
+   - Update build documentation
 
 3. **Follow the commit message convention**
    ```
@@ -225,12 +239,14 @@ Brief description of changes
 - [ ] Tested on Linux
 - [ ] Added unit tests
 - [ ] Updated documentation
+- [ ] Tested production build
 
 ## Checklist
 - [ ] Code follows style guidelines
 - [ ] Self-review completed
 - [ ] Documentation updated
 - [ ] No breaking changes
+- [ ] Production build tested
 ```
 
 ## 🏷️ Version Control
@@ -257,6 +273,7 @@ Brief description of changes
 - Check the troubleshooting section in BUILD.md
 - Verify your development environment
 - Test with a clean build
+- Check email configuration for password resets
 
 ## 📄 License
 

@@ -1,9 +1,5 @@
 # Cargo will automatically use the optimal number of jobs
 
-[target.x86_64-pc-windows-msvc]
-# Use the MSVC linker for faster linking
-linker = "rust-lld"
-
 [net]
 # Use multiple Git connections for faster dependency downloads
 git-fetch-with-cli = true
@@ -16,3 +12,6 @@ incremental = true
 [profile.dev.package."*"]
 # Don't optimize dependencies during development
 opt-level = 0 
+
+[target.x86_64-pc-windows-msvc]
+linker = "rust-lld" 

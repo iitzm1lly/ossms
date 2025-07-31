@@ -102,6 +102,16 @@ pub struct EnrichedSupplyHistory {
     pub created_at: String,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PasswordResetToken {
+    pub id: String,
+    pub user_id: String,
+    pub token: String,
+    pub expires_at: String,
+    pub used: bool,
+    pub created_at: String,
+}
+
 pub struct Database {
     conn: Connection,
 }
@@ -221,6 +231,20 @@ impl Database {
             [],
         )?;
         println!("Supply history table created/verified");
+
+        // Password reset tokens table
+        self.conn.execute(
+            "CREATE TABLE IF NOT EXISTS password_reset_tokens (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                token TEXT UNIQUE NOT NULL,
+                expires_at TEXT NOT NULL,
+                used BOOLEAN NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL
+            )",
+            [],
+        )?;
+        println!("Password reset tokens table created/verified");
 
         Ok(())
     }
@@ -364,6 +388,52 @@ impl Database {
             println!("User not found: {}", username);
             Ok(false)
         }
+    }
+
+    pub fn get_user_by_email(&self, email: &str) -> Result<Option<User>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id, username, password, firstname, lastname, email, role, permissions, created_at, updated_at 
+             FROM users WHERE email = ?"
+        )?;
+        
+        let user = stmt.query_row(params![email], |row| {
+            Ok(User {
+                id: row.get(0)?,
+                username: row.get(1)?,
+                password: row.get(2)?,
+                firstname: row.get(3)?,
+                lastname: row.get(4)?,
+                email: row.get(5)?,
+                role: row.get(6)?,
+                permissions: row.get(7)?,
+                created_at: row.get(8)?,
+                updated_at: row.get(9)?,
+            })
+        }).optional()?;
+
+        Ok(user)
+    }
+
+    pub fn update_user_password(&self, user_id: &str, new_password: &str) -> Result<()> {
+        let now = chrono::Utc::now().to_rfc3339();
+        
+        self.conn.execute(
+            "UPDATE users SET password = ?, updated_at = ? WHERE id = ?",
+            params![new_password, now, user_id],
+        )?;
+
+        Ok(())
+    }
+
+
+
+    pub fn delete_user(&self, user_id: &str) -> Result<()> {
+        self.conn.execute(
+            "DELETE FROM users WHERE id = ?",
+            params![user_id],
+        )?;
+
+        Ok(())
     }
 
     // Supply operations
@@ -964,6 +1034,55 @@ impl Database {
             )?;
         }
         
+        Ok(())
+    }
+
+    // Password reset token methods
+    pub fn create_password_reset_token(&self, user_id: &str, token: &str, expires_at: &str) -> Result<String> {
+        let id = uuid::Uuid::new_v4().to_string();
+        let now = chrono::Utc::now().to_rfc3339();
+        
+        self.conn.execute(
+            "INSERT INTO password_reset_tokens (id, user_id, token, expires_at, used, created_at) VALUES (?, ?, ?, ?, 0, ?)",
+            params![id, user_id, token, expires_at, now],
+        )?;
+        
+        Ok(id)
+    }
+
+    pub fn get_password_reset_token(&self, token: &str) -> Result<Option<PasswordResetToken>> {
+        let token_data = self.conn.query_row(
+            "SELECT id, user_id, token, expires_at, used, created_at FROM password_reset_tokens WHERE token = ?",
+            params![token],
+            |row| {
+                Ok(PasswordResetToken {
+                    id: row.get(0)?,
+                    user_id: row.get(1)?,
+                    token: row.get(2)?,
+                    expires_at: row.get(3)?,
+                    used: row.get(4)?,
+                    created_at: row.get(5)?,
+                })
+            }
+        ).optional()?;
+        
+        Ok(token_data)
+    }
+
+    pub fn mark_token_as_used(&self, token: &str) -> Result<()> {
+        self.conn.execute(
+            "UPDATE password_reset_tokens SET used = 1 WHERE token = ?",
+            params![token],
+        )?;
+        Ok(())
+    }
+
+    pub fn cleanup_expired_tokens(&self) -> Result<()> {
+        let now = chrono::Utc::now().to_rfc3339();
+        self.conn.execute(
+            "DELETE FROM password_reset_tokens WHERE expires_at < ? OR used = 1",
+            params![now],
+        )?;
         Ok(())
     }
 }

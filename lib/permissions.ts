@@ -33,6 +33,20 @@ export function hasPermission(user: User | null, module: string, action: string)
     return true
   }
   
+  // Staff role override - if user has staff role but no permissions, assign default staff permissions
+  if (user.role === 'staff' && (!user.permissions || Object.keys(user.permissions).length === 0)) {
+    const defaultStaffPermissions = {
+      supplies: ["view", "create", "edit"],
+      supply_histories: ["view", "create"],
+      reports: ["view"]
+    };
+    
+    const modulePermissions = defaultStaffPermissions[module as keyof typeof defaultStaffPermissions];
+    if (!modulePermissions) return false;
+    
+    return modulePermissions.includes(action);
+  }
+  
   if (!user.permissions) return false
   
   const modulePermissions = user.permissions[module as keyof UserPermissions]

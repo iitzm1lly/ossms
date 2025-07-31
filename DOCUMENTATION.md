@@ -12,19 +12,21 @@ This document provides an overview of all documentation files in the OSSMS proje
 - Installation instructions
 - Quick start guide
 - Project structure
-- Configuration options
+- Configuration options (including email setup)
 - Troubleshooting guide
 - API reference
+- Production build instructions
 
 ### [BUILD.md](BUILD.md)
 **Purpose**: Build system documentation and troubleshooting
 **Audience**: Developers, DevOps engineers
 **Content**:
 - Build scripts and commands
+- Production build automation
 - Build optimizations
 - Manual build steps
 - Common build errors and solutions
-- Production build guide
+- Production build features
 
 ### [CONTRIBUTING.md](CONTRIBUTING.md)
 **Purpose**: Guidelines for contributors
@@ -46,6 +48,7 @@ This document provides an overview of all documentation files in the OSSMS proje
 - Bug fixes
 - Breaking changes
 - Migration guides
+- Production-ready features
 
 ## 📋 Configuration Files
 
@@ -72,6 +75,14 @@ This document provides an overview of all documentation files in the OSSMS proje
 
 ## 🛠️ Build Scripts
 
+### [build-production.ps1](build-production.ps1)
+**Purpose**: Automated production build script for Windows
+**Content**:
+- Complete production build process
+- Automated dependency installation
+- Build artifact cleanup
+- Success/failure feedback
+
 ### [build.ps1](build.ps1)
 **Purpose**: Windows PowerShell build script
 **Content**:
@@ -96,6 +107,7 @@ ossms/
 ├── CHANGELOG.md           # Version history
 ├── LICENSE                # MIT License
 ├── DOCUMENTATION.md       # This file
+├── build-production.ps1   # Production build script
 ├── build.ps1              # Windows build script
 ├── build.sh               # Unix build script
 ├── package.json           # Node.js configuration
@@ -130,21 +142,25 @@ ossms/
 1. Start with [README.md](README.md)
 2. Follow the installation guide
 3. Check [BUILD.md](BUILD.md) for build issues
+4. Review email configuration for password resets
 
 ### For Developers
 1. Read [CONTRIBUTING.md](CONTRIBUTING.md)
 2. Review [BUILD.md](BUILD.md) for build process
 3. Check [CHANGELOG.md](CHANGELOG.md) for recent changes
+4. Use production build script for deployment
 
 ### For Contributors
 1. Read [CONTRIBUTING.md](CONTRIBUTING.md) thoroughly
 2. Follow the pull request process
 3. Update relevant documentation
+4. Test production builds
 
 ### For Troubleshooting
 1. Check [BUILD.md](BUILD.md) for build issues
 2. Review [README.md](README.md) troubleshooting section
 3. Search GitHub issues for similar problems
+4. Verify email configuration for password resets
 
 ## 📝 Documentation Standards
 
@@ -163,6 +179,21 @@ ossms/
 - Use relative links within the project
 - Keep links up to date
 - Test all links regularly
+
+## 🚀 Production Features
+
+### Current Production-Ready Features
+- **Email Functionality**: SMTP support for password resets
+- **Role-Based Access**: Complete Admin, Staff, and Viewer support
+- **Production Builds**: Automated build scripts
+- **Database Optimization**: SQLite with proper indexing
+- **Security**: Password hashing and secure authentication
+
+### Build Automation
+- Automated production build script
+- Clean build processes
+- Optimized for deployment
+- Cross-platform compatibility
 
 ---
 

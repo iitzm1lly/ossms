@@ -8,14 +8,20 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
-import { Loader2, ArrowLeft, Mail, CheckCircle, Building2, Shield } from "lucide-react"
+import { Loader2, ArrowLeft, Mail, CheckCircle, Building2, Shield, Eye, EyeOff } from "lucide-react"
 import tauriApiService from "@/components/services/tauriApiService"
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
+  const [showResetForm, setShowResetForm] = useState(false)
   const [resetToken, setResetToken] = useState("")
+  const [newPassword, setNewPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [isResetting, setIsResetting] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [errors, setErrors] = useState<{[key: string]: string}>({})
   const { toast } = useToast()
   const router = useRouter()
@@ -45,9 +51,10 @@ export default function ForgotPasswordPage() {
 
       if (response && response.success) {
         setIsSuccess(true)
+        setShowResetForm(true)
         toast({
           title: "Success!",
-          description: "Password reset link has been sent to your email",
+          description: "Password reset email sent! You can now reset your password below.",
         })
       } else {
         throw new Error(response?.error || "Failed to send reset link")
@@ -65,6 +72,77 @@ export default function ForgotPasswordPage() {
 
   const handleBackToLogin = () => {
     router.push("/")
+  }
+
+  const validateResetForm = () => {
+    const newErrors: {[key: string]: string} = {}
+    
+    if (!resetToken.trim()) newErrors.token = "Reset token is required"
+    if (!newPassword.trim()) newErrors.password = "New password is required"
+    if (!confirmPassword.trim()) newErrors.confirmPassword = "Password confirmation is required"
+    
+    // Password validation
+    if (newPassword && newPassword.length < 6) {
+      newErrors.password = "Password must be at least 6 characters"
+    }
+    
+    // Password confirmation validation
+    if (newPassword && confirmPassword && newPassword !== confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match"
+    }
+    
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!validateResetForm()) {
+      toast({
+        title: "Validation Error",
+        description: "Please fix the errors in the form",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsResetting(true)
+
+    try {
+      const response = await tauriApiService.resetPassword(
+        email.trim(),
+        resetToken.trim(),
+        newPassword
+      )
+
+      if (response && response.success) {
+        toast({
+          title: "Success!",
+          description: "Your password has been reset successfully. You can now login with your new password.",
+        })
+        // Reset form and go back to login
+        setShowResetForm(false)
+        setResetToken("")
+        setNewPassword("")
+        setConfirmPassword("")
+        setIsSuccess(false)
+        setEmail("")
+        setTimeout(() => {
+          router.push("/")
+        }, 2000)
+      } else {
+        throw new Error(response?.error || "Failed to reset password")
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to reset password",
+        variant: "destructive",
+      })
+    } finally {
+      setIsResetting(false)
+    }
   }
 
   return (
@@ -179,34 +257,135 @@ export default function ForgotPasswordPage() {
               </Button>
             </form>
           ) : (
-            <div className="text-center space-y-6">
-              <div className="mx-auto w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center">
-                <CheckCircle className="h-8 w-8 text-white" />
-              </div>
-              
-              <div className="space-y-2">
-                <h3 className="text-xl font-semibold text-white">
-                  Check Your Email
-                </h3>
-                <p className="text-gray-300">
-                  We've sent a password reset link to <strong>{email}</strong>
-                </p>
-              </div>
-
-              {/* Development Only - Show Token */}
-              {process.env.NODE_ENV === 'development' && resetToken && (
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-600 mb-2">Development Token (remove in production):</p>
-                  <p className="text-xs font-mono bg-white p-2 rounded border break-all">
-                    {resetToken}
+            <div className="space-y-6">
+              <div className="text-center">
+                <div className="mx-auto w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center mb-4">
+                  <CheckCircle className="h-8 w-8 text-white" />
+                </div>
+                
+                <div className="space-y-2 mb-6">
+                  <h3 className="text-xl font-semibold text-white">
+                    Email Sent Successfully!
+                  </h3>
+                  <p className="text-gray-300">
+                    We've sent a password reset email to <strong>{email}</strong>
+                  </p>
+                  <p className="text-gray-300 text-sm">
+                    Copy the token from your email and reset your password below:
                   </p>
                 </div>
-              )}
+              </div>
+
+              {/* Password Reset Form */}
+              <form onSubmit={handleResetPassword} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="token" className="text-sm font-medium text-white">
+                    RESET TOKEN*
+                  </Label>
+                  <Input
+                    type="text"
+                    id="token"
+                    value={resetToken}
+                    onChange={(e) => setResetToken(e.target.value)}
+                    className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-200 focus:ring-2 focus:ring-[#b12025]/20 focus:border-[#b12025] bg-white text-black ${
+                      errors.token ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' : 'border-gray-300'
+                    }`}
+                    placeholder="Paste the token from your email"
+                    required
+                  />
+                  {errors.token && (
+                    <p className="text-sm text-yellow-300 flex items-center">
+                      <span className="w-1 h-1 bg-yellow-300 rounded-full mr-2"></span>
+                      {errors.token}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="newPassword" className="text-sm font-medium text-white">
+                    NEW PASSWORD*
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      id="newPassword"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className={`w-full px-4 py-3 pr-12 border-2 rounded-xl transition-all duration-200 focus:ring-2 focus:ring-[#b12025]/20 focus:border-[#b12025] bg-white text-black ${
+                        errors.password ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' : 'border-gray-300'
+                      }`}
+                      placeholder="Enter new password (min 6 characters)"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  {errors.password && (
+                    <p className="text-sm text-yellow-300 flex items-center">
+                      <span className="w-1 h-1 bg-yellow-300 rounded-full mr-2"></span>
+                      {errors.password}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword" className="text-sm font-medium text-white">
+                    CONFIRM PASSWORD*
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      type={showConfirmPassword ? "text" : "password"}
+                      id="confirmPassword"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className={`w-full px-4 py-3 pr-12 border-2 rounded-xl transition-all duration-200 focus:ring-2 focus:ring-[#b12025]/20 focus:border-[#b12025] bg-white text-black ${
+                        errors.confirmPassword ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' : 'border-gray-300'
+                      }`}
+                      placeholder="Confirm your new password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    >
+                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  {errors.confirmPassword && (
+                    <p className="text-sm text-yellow-300 flex items-center">
+                      <span className="w-1 h-1 bg-yellow-300 rounded-full mr-2"></span>
+                      {errors.confirmPassword}
+                    </p>
+                  )}
+                </div>
+
+                <Button
+                  type="submit"
+                  className="w-full bg-[#b12025] hover:bg-[#8a1a1f] text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-[1.02] focus:ring-2 focus:ring-[#b12025]/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                  disabled={isResetting}
+                >
+                  {isResetting ? (
+                    <div className="flex items-center justify-center">
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      RESETTING PASSWORD...
+                    </div>
+                  ) : (
+                    "RESET PASSWORD"
+                  )}
+                </Button>
+              </form>
 
               <div className="space-y-3">
                 <Button
                   onClick={handleBackToLogin}
-                  className="w-full bg-[#b12025] hover:bg-[#8a1a1f] text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-[1.02] focus:ring-2 focus:ring-[#b12025]/20"
+                  variant="outline"
+                  className="w-full border-gray-300 text-gray-300 hover:bg-gray-600"
                 >
                   Back to Login
                 </Button>
@@ -215,12 +394,15 @@ export default function ForgotPasswordPage() {
                   variant="outline"
                   onClick={() => {
                     setIsSuccess(false)
+                    setShowResetForm(false)
                     setEmail("")
                     setResetToken("")
+                    setNewPassword("")
+                    setConfirmPassword("")
                   }}
                   className="w-full border-gray-300 text-gray-300 hover:bg-gray-600"
                 >
-                  Send Another Link
+                  Send Another Email
                 </Button>
               </div>
             </div>

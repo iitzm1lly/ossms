@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2024 OSSMS Contributors
+Copyright (c) 2025 OSSMS Contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -18,4 +18,39 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE. 
+SOFTWARE.
+
+---
+
+## Third-Party Assets
+
+### University Logos
+This software includes logos and branding materials from the following institutions:
+
+- **UST Logo** (`ust-logo.png`): University of Santo Tomas
+- **CICS Logo** (`ciscs-logo.png`): College of Information and Computing Sciences, University of Santo Tomas
+
+These logos are used for educational and institutional identification purposes. The use of these logos does not imply endorsement by the University of Santo Tomas or the College of Information and Computing Sciences.
+
+### Logo Usage Guidelines
+- These logos are included for institutional identification only
+- They should not be modified, altered, or used in ways that misrepresent the institutions
+- For official use, please contact the respective institutions for proper authorization
+- The logos remain the property of their respective institutions
+
+### Attribution
+When using this software that includes the UST and CICS logos, please ensure proper attribution to:
+- University of Santo Tomas
+- College of Information and Computing Sciences, University of Santo Tomas
+
+---
+
+## Software Features
+This software includes the following key features:
+- Office Supply Stock Management System (OSSMS)
+- User authentication and role-based access control
+- Inventory management and tracking
+- Email functionality for password resets
+- Cross-platform desktop application
+- SQLite database backend
+- Modern React/Next.js frontend with Tauri framework 

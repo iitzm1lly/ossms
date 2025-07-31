@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useRouter } from "next/navigation"
-import { Users, Package, History, TrendingUp, TrendingDown, AlertTriangle, Plus, Eye, BarChart3, Shield } from "lucide-react"
+import { Users, Package, History, TrendingUp, TrendingDown, AlertTriangle, Plus, Eye, BarChart3, RefreshCw } from "lucide-react"
 import tauriApiService from "@/components/services/tauriApiService"
 import { useToast } from "@/components/ui/use-toast"
 import { getCurrentUser, hasPermission } from "@/lib/permissions"
@@ -49,6 +49,7 @@ export default function DashboardPage() {
     canCreateUsers: false,
   })
   const [currentUser, setCurrentUser] = useState<User | null>(null)
+
 
   // Helper function to check if current user is admin
   const isCurrentUserAdmin = () => {
@@ -119,6 +120,8 @@ export default function DashboardPage() {
 
 
 
+
+
   useEffect(() => {
     // Get current user first
     const userStr = localStorage.getItem('user')
@@ -128,19 +131,45 @@ export default function DashboardPage() {
         setCurrentUser(user)
         
         // Set user permissions after user is loaded
+        // If user has staff role but no permissions, assign default staff permissions
+        let effectivePermissions = user.permissions;
+        
+        // Check if user has staff role but no valid permissions
+        const hasNoValidPermissions = !user.permissions || 
+          (typeof user.permissions === 'string' && !user.permissions.trim()) ||
+          (typeof user.permissions === 'object' && Object.keys(user.permissions).length === 0);
+        
+        if ((user.role === 'staff' || user.role === 'Staff') && hasNoValidPermissions) {
+          effectivePermissions = {
+            supplies: ["view", "create", "edit"],
+            supply_histories: ["view", "create"],
+            reports: ["view"]
+          };
+          // Assigning default staff permissions
+        }
+        
         setUserPermissions({
-          canViewSupplies: hasPermission(user, 'supplies', 'view'),
-          canViewHistory: hasPermission(user, 'supply_histories', 'view'),
-          canViewReports: hasPermission(user, 'reports', 'view'),
-          canViewUsers: hasPermission(user, 'users', 'view'),
-          canCreateSupplies: hasPermission(user, 'supplies', 'create'),
-          canCreateUsers: hasPermission(user, 'users', 'create'),
+          canViewSupplies: hasPermission({ ...user, permissions: effectivePermissions }, 'supplies', 'view'),
+          canViewHistory: hasPermission({ ...user, permissions: effectivePermissions }, 'supply_histories', 'view'),
+          canViewReports: hasPermission({ ...user, permissions: effectivePermissions }, 'reports', 'view'),
+          canViewUsers: hasPermission({ ...user, permissions: effectivePermissions }, 'users', 'view'),
+          canCreateSupplies: hasPermission({ ...user, permissions: effectivePermissions }, 'supplies', 'create'),
+          canCreateUsers: hasPermission({ ...user, permissions: effectivePermissions }, 'users', 'create'),
         })
         
-        // Debug logging
-        console.log('Current user:', user)
-        console.log('User permissions:', user.permissions)
-        console.log('User role:', user.role)
+        // If permissions is a string, try to parse it
+        if (typeof user.permissions === 'string' && user.permissions.trim()) {
+          try {
+            user.permissions = JSON.parse(user.permissions)
+            // Update localStorage with parsed permissions
+            localStorage.setItem("user", JSON.stringify(user))
+          } catch (error) {
+            console.error('Error parsing permissions string:', error)
+            user.permissions = {}
+          }
+        }
+        
+
       } catch (error) {
         console.error('Error parsing user data:', error)
       }
@@ -179,12 +208,14 @@ export default function DashboardPage() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               {isCurrentUserAdmin() ? "Admin Dashboard" : 
-               currentUser?.role === 'staff' ? "Staff Dashboard" : "Viewer Dashboard"}
+               (currentUser?.role === 'staff' || currentUser?.role === 'Staff') ? "Staff Dashboard" : 
+               currentUser?.role === 'viewer' ? "Viewer Dashboard" : "Dashboard"}
             </h1>
             <p className="text-gray-600">
               {isCurrentUserAdmin() ? "Full system access and management capabilities" :
-               currentUser?.role === 'staff' ? "Inventory management and reporting access" :
-               "Read-only access to system information"}
+               (currentUser?.role === 'staff' || currentUser?.role === 'Staff') ? "Inventory management and reporting access" :
+               currentUser?.role === 'viewer' ? "Read-only access to system information" :
+               "System access"}
             </p>
             {currentUser && (
               <div className="flex items-center mt-2 space-x-4">
@@ -194,6 +225,7 @@ export default function DashboardPage() {
                 <span className="text-sm text-gray-500">
                   Welcome, {currentUser.firstname || currentUser.username}
                 </span>
+
               </div>
             )}
           </div>
@@ -211,6 +243,12 @@ export default function DashboardPage() {
               <RefreshCw className="h-4 w-4" />
               <span>Refresh</span>
             </Button>
+            
+
+            
+
+            
+
           </div>
         </div>
       </div>
@@ -260,41 +298,37 @@ export default function DashboardPage() {
         )}
 
         {/* Staff sees inventory, history, and reports */}
-        {currentUser?.role === 'staff' && !isCurrentUserAdmin() && (
+        {(currentUser?.role === 'staff' || currentUser?.role === 'Staff') && !isCurrentUserAdmin() && (
           <>
-            {userPermissions.canViewSupplies && (
-              <DashboardCard
-                title="Total Inventory"
-                value={isLoading ? "..." : stats.itemCount.toString()}
-                link="/inventory/view-items"
-                icon={<Package className="h-6 w-6" />}
-                gradient="from-blue-500 to-blue-600"
-                bgGradient="from-blue-50 to-blue-100"
-                description="Items in stock"
-              />
-            )}
-            {userPermissions.canViewHistory && (
-              <DashboardCard
-                title="Item History"
-                value={isLoading ? "..." : stats.historyCount.toString()}
-                link="/item-history"
-                icon={<History className="h-6 w-6" />}
-                gradient="from-green-500 to-green-600"
-                bgGradient="from-green-50 to-green-100"
-                description="Transaction records"
-              />
-            )}
-            {userPermissions.canViewReports && (
-              <DashboardCard
-                title="Available Reports"
-                value={stats.reportCount.toString()}
-                link="/reports/low-stock"
-                icon={<TrendingUp className="h-6 w-6" />}
-                gradient="from-purple-500 to-purple-600"
-                bgGradient="from-purple-50 to-purple-100"
-                description="Stock & movement reports"
-              />
-            )}
+            {/* Always show these for staff users, regardless of permissions */}
+            <DashboardCard
+              title="Total Inventory"
+              value={isLoading ? "..." : stats.itemCount.toString()}
+              link="/inventory/view-items"
+              icon={<Package className="h-6 w-6" />}
+              gradient="from-blue-500 to-blue-600"
+              bgGradient="from-blue-50 to-blue-100"
+              description="Items in stock"
+            />
+            <DashboardCard
+              title="Item History"
+              value={isLoading ? "..." : stats.historyCount.toString()}
+              link="/item-history"
+              icon={<History className="h-6 w-6" />}
+              gradient="from-green-500 to-green-600"
+              bgGradient="from-green-50 to-green-100"
+              description="Transaction records"
+            />
+            <DashboardCard
+              title="Available Reports"
+              value={stats.reportCount.toString()}
+              link="/reports/low-stock"
+              icon={<TrendingUp className="h-6 w-6" />}
+              gradient="from-purple-500 to-purple-600"
+              bgGradient="from-purple-50 to-purple-100"
+              description="Stock & movement reports"
+            />
+            {/* Only show users card if they have permission */}
             {userPermissions.canViewUsers && (
               <DashboardCard
                 title="System Users"
@@ -309,8 +343,8 @@ export default function DashboardPage() {
           </>
         )}
 
-        {/* Viewer sees limited stats */}
-        {(!currentUser || currentUser?.role === 'viewer') && !isCurrentUserAdmin() && (
+        {/* Viewer sees limited stats - only show if explicitly viewer role */}
+        {currentUser?.role === 'viewer' && !isCurrentUserAdmin() && (
           <>
             {userPermissions.canViewSupplies && (
               <DashboardCard
@@ -356,8 +390,9 @@ export default function DashboardPage() {
           <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
             <AlertTriangle className="h-5 w-5 mr-2 text-blue-600" />
             {isCurrentUserAdmin() ? "Admin Actions" : 
-             currentUser?.role === 'staff' ? "Staff Actions" : "Available Actions"}
+             (currentUser?.role === 'staff' || currentUser?.role === 'Staff') ? "Staff Actions" : "Available Actions"}
           </h3>
+
           <div className="grid grid-cols-2 gap-3">
             {/* Admin sees all actions */}
             {isCurrentUserAdmin() && (
@@ -394,9 +429,10 @@ export default function DashboardPage() {
               </>
             )}
 
-            {/* Staff sees permission-based actions */}
-            {currentUser?.role === 'staff' && !isCurrentUserAdmin() && (
+                        {/* Staff sees permission-based actions */}
+            {(currentUser?.role === 'staff' || currentUser?.role === 'Staff') && !isCurrentUserAdmin() && (
               <>
+
                 {/* Default staff actions - always show these for staff users */}
                 <Link href="/inventory/view-items" className="group">
                   <div className="p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl border border-blue-200 hover:border-blue-300 transition-all duration-200 group-hover:shadow-md">
@@ -436,8 +472,8 @@ export default function DashboardPage() {
               </>
             )}
 
-            {/* Viewer sees read-only actions */}
-            {(!currentUser || currentUser?.role === 'viewer') && !isCurrentUserAdmin() && (
+            {/* Viewer sees read-only actions - only show if explicitly viewer role */}
+            {currentUser?.role === 'viewer' && !isCurrentUserAdmin() && (
               <>
                 {/* Default viewer actions - read-only access */}
                 <Link href="/inventory/view-items" className="group">
@@ -466,6 +502,26 @@ export default function DashboardPage() {
                     <TrendingUp className="h-8 w-8 text-green-600 mb-2" />
                     <h4 className="font-medium text-gray-900">Stock Movement</h4>
                     <p className="text-sm text-gray-600">Movement analysis</p>
+                  </div>
+                </Link>
+              </>
+            )}
+            
+            {/* Fallback for any user that doesn't match above conditions */}
+            {currentUser && !isCurrentUserAdmin() && currentUser?.role !== 'staff' && currentUser?.role !== 'Staff' && currentUser?.role !== 'viewer' && (
+              <>
+                <Link href="/inventory/view-items" className="group">
+                  <div className="p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl border border-blue-200 hover:border-blue-300 transition-all duration-200 group-hover:shadow-md">
+                    <Package className="h-8 w-8 text-blue-600 mb-2" />
+                    <h4 className="font-medium text-gray-900">View Inventory</h4>
+                    <p className="text-sm text-gray-600">Browse items in stock</p>
+                  </div>
+                </Link>
+                <Link href="/item-history" className="group">
+                  <div className="p-3 bg-gradient-to-r from-orange-50 to-orange-100 rounded-xl border border-orange-200 hover:border-orange-300 transition-all duration-200 group-hover:shadow-md">
+                    <BarChart3 className="h-8 w-8 text-orange-600 mb-2" />
+                    <h4 className="font-medium text-gray-900">View History</h4>
+                    <p className="text-sm text-gray-600">Transaction records</p>
                   </div>
                 </Link>
               </>

@@ -320,6 +320,8 @@ class TauriApiService {
     }
   }
 
+
+
   // Supply management
   async getSupplies(): Promise<Supply[]> {
     try {
@@ -500,6 +502,24 @@ class TauriApiService {
       return await this.invoke('get_name') as string;
     } catch (error) {
       return 'OSSMS Desktop';
+    }
+  }
+
+  async checkDatabaseStatus(): Promise<{ status: string; message?: string }> {
+    try {
+      await this.waitForInitialization();
+      if (!this.invoke) {
+        throw new Error('Tauri invoke function not available');
+      }
+      // Try to get users as a simple database connectivity test
+      await this.invoke('get_users');
+      return { status: 'connected' };
+    } catch (error) {
+      console.error('Database status check failed:', error);
+      return { 
+        status: 'error', 
+        message: error instanceof Error ? error.message : 'Unknown database error' 
+      };
     }
   }
 
