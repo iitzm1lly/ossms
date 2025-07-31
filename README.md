@@ -256,9 +256,15 @@ This software includes logos from the University of Santo Tomas and the College 
 
 ## 🆘 Support
 
-- **Issues**: [GitHub Issues](https://github.com/your-repo/ossms/issues)
-- **Documentation**: [Wiki](https://github.com/your-repo/ossms/wiki)
-- **Discussions**: [GitHub Discussions](https://github.com/your-repo/ossms/discussions)
+- **Issues**: [GitHub Issues](https://github.com/your-repo/ossms/issues) *(Coming Soon)*
+- **Documentation**: [Wiki](https://github.com/your-repo/ossms/wiki) *(Coming Soon)*
+- **Discussions**: [GitHub Discussions](https://github.com/your-repo/ossms/discussions) *(Coming Soon)*
+
+### Alternative Support Options
+- **In-App Support**: Use the Support page within the application
+- **Email Support**: Contact your system administrator
+- **Local Documentation**: See [DOCUMENTATION.md](DOCUMENTATION.md) for detailed guides
+- **Troubleshooting**: Check the [Troubleshooting](#-troubleshooting) section above
 
 ## 🗺️ Roadmap
 
