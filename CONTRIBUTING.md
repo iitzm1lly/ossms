@@ -5,16 +5,20 @@ Thank you for your interest in contributing to the Office Supply Stock Managemen
 ## 🤝 How to Contribute
 
 ### Reporting Issues
-- Use the [GitHub Issues](https://github.com/your-repo/ossms/issues) page
+- Use the [GitHub Issues](https://github.com/your-repo/ossms/issues) page *(Coming Soon)*
 - Include detailed steps to reproduce the issue
 - Provide system information (OS, Node.js version, Rust version)
 - Include error messages and logs
 
+**Alternative**: Contact your system administrator or check the [Troubleshooting](#troubleshooting) section in README.md
+
 ### Suggesting Features
-- Use the [GitHub Discussions](https://github.com/your-repo/ossms/discussions) page
+- Use the [GitHub Discussions](https://github.com/your-repo/ossms/discussions) page *(Coming Soon)*
 - Describe the feature and its benefits
 - Consider implementation complexity
 - Check if it aligns with the project goals
+
+**Alternative**: Contact your system administrator or use the local documentation
 
 ### Code Contributions
 1. Fork the repository
@@ -265,9 +269,11 @@ Brief description of changes
 ## 🆘 Getting Help
 
 ### Questions and Discussions
-- Use [GitHub Discussions](https://github.com/your-repo/ossms/discussions)
+- Use [GitHub Discussions](https://github.com/your-repo/ossms/discussions) *(Coming Soon)*
 - Check existing issues and pull requests
 - Review the documentation
+
+**Alternative**: Contact your system administrator or use the local documentation
 
 ### Development Issues
 - Check the troubleshooting section in BUILD.md
