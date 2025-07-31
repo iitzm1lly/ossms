@@ -1,0 +1,54 @@
+[package]
+name = "app"
+version = "0.1.0"
+description = "A Tauri App"
+authors = ["you"]
+license = ""
+repository = ""
+edition = "2021"
+rust-version = "1.77.2"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[features]
+default = []
+logging = ["log", "tauri-plugin-log"]
+
+[build-dependencies]
+tauri-build = { version = "2.3.1", features = [] }
+
+[dependencies]
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+log = { version = "0.4", optional = true }
+tauri = { version = "2.7.0", features = [] }
+tauri-plugin-log = { version = "2", optional = true }
+# Database
+rusqlite = { version = "0.31", features = ["bundled"] }
+# Password hashing
+bcrypt = "0.15"
+# UUID generation
+uuid = { version = "1.0", features = ["v4"] }
+# Directory handling
+dirs = "5.0"
+# Date/time handling
+chrono = { version = "0.4", features = ["serde"] }
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[profile.dev]
+opt-level = 1
+codegen-units = 16
+
+# Faster compilation for dependencies
+[profile.dev.package."*"]
+opt-level = 0
