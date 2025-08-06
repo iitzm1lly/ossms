@@ -1,0 +1,10 @@
+[target.x86_64-pc-windows-msvc]
+linker = "link.exe"
+rustflags = [
+    "-C", "link-arg=/NOLOGO",
+    "-C", "link-arg=/SUBSYSTEM:CONSOLE",
+    "-C", "link-arg=/MACHINE:X64"
+]
+
+[env]
+LIB = "C:\\Program Files (x86)\\Windows Kits\\10\\UnionMetadata;C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.14.26428\\lib\\x64" 
