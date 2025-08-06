@@ -10,11 +10,14 @@ import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
+import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import tauriApiService from "./services/tauriApiService"
 import { getCategoryOptions } from "@/lib/category-utils"
+import { getVariationOptions } from "@/lib/variation-utils"
+import { calculateStockStatus } from "@/lib/utils"
 
 // Form schema
 const formSchema = z.object({
@@ -26,6 +29,8 @@ const formSchema = z.object({
   description: z.string().optional(),
   category: z.string().optional(),
   subcategory: z.string().optional(),
+  variation: z.string().optional(),
+  brand: z.string().min(1, { message: "Brand name is required" }),
   supplier_name: z.string().optional(),
   supplier_contact: z.string().optional(),
   supplier_notes: z.string().optional(),
@@ -92,6 +97,8 @@ export function CreateItemForm() {
       description: "",
       category: "",
       subcategory: "",
+      variation: "",
+      brand: "",
       supplier_name: "",
       supplier_contact: "",
       supplier_notes: "",
@@ -120,13 +127,8 @@ export function CreateItemForm() {
       // Calculate total pieces
       const totalPieces = data.initial_pieces + data.initial_bulk * data.pieces_per_bulk
 
-      // Calculate stock status
-      let stockStatus = "Moderate"
-      if (totalPieces <= 24) {
-        stockStatus = "Low"
-      } else if (totalPieces >= 120) {
-        stockStatus = "High"
-      }
+      // Calculate stock status using consistent logic
+      const stockStatus = calculateStockStatus(totalPieces, 10).status
 
       // Get current user
       const user = JSON.parse(localStorage.getItem("user") || "{}")
@@ -136,12 +138,19 @@ export function CreateItemForm() {
         name: data.name,
         description: data.description,
         category: data.category || "other",
+        subcategory: data.subcategory,
+        variation: data.variation,
+        brand: data.brand,
         quantity: totalPieces,
         unit: data.unit_type,
         min_quantity: 10, // Default minimum quantity
         status: stockStatus,
         location: "Main Storage",
         supplier: data.supplier_name,
+        supplier_name: data.supplier_name,
+        supplier_contact: data.supplier_contact,
+        supplier_notes: data.supplier_notes,
+        pieces_per_bulk: data.pieces_per_bulk,
         cost: undefined,
       }
 
@@ -180,29 +189,172 @@ export function CreateItemForm() {
       )}
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
           <Tabs defaultValue="basic" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="basic">Basic Information</TabsTrigger>
-              <TabsTrigger value="details">Item Details</TabsTrigger>
-              <TabsTrigger value="supplier">Supplier Information</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-3 bg-gray-100 p-1 rounded-lg">
+              <TabsTrigger value="basic" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                Basic Information
+              </TabsTrigger>
+              <TabsTrigger value="details" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                Item Details
+              </TabsTrigger>
+              <TabsTrigger value="supplier" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                Supplier Information
+              </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="basic" className="space-y-6 pt-4">
-              {/* Basic information fields */}
+            <TabsContent value="basic" className="space-y-6 pt-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-gray-700">
+                        Item Name
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          className="bg-white border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                          placeholder="Enter item name"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="unit_type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-gray-700">
+                        Unit Type
+                      </FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger className="bg-white border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 transition-colors">
+                            <SelectValue placeholder="Select unit type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {unitTypes.map((unit) => (
+                            <SelectItem key={unit.value} value={unit.value}>
+                              {unit.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <FormField
+                  control={form.control}
+                  name="initial_bulk"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-gray-700">
+                        Initial Bulk Units
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type="number"
+                          min="0"
+                          className="bg-white border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                          placeholder="0"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="pieces_per_bulk"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-gray-700">
+                        Pieces Per Bulk
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type="number"
+                          min="1"
+                          className="bg-white border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                          placeholder="12"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="initial_pieces"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-gray-700">
+                        Additional Pieces
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type="number"
+                          min="0"
+                          className="bg-white border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                          placeholder="0"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="stock_in_reason"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium text-gray-700">
+                      Stock In Reason
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        className="bg-white border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                        placeholder="Enter reason for initial stock"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </TabsContent>
 
-            <TabsContent value="details" className="space-y-6 pt-4">
+            <TabsContent value="details" className="space-y-6 pt-6">
               <FormField
                 control={form.control}
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm font-semibold">ITEM DESCRIPTION</FormLabel>
+                    <FormLabel className="text-sm font-medium text-gray-700">
+                      Item Description
+                    </FormLabel>
                     <FormControl>
                       <Textarea
                         {...field}
-                        className="bg-white min-h-[100px]"
+                        className="bg-white border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 transition-colors min-h-[100px]"
                         placeholder="Enter detailed description of the item"
                       />
                     </FormControl>
@@ -211,16 +363,18 @@ export function CreateItemForm() {
                 )}
               />
 
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
                   name="category"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-semibold">CATEGORY</FormLabel>
+                      <FormLabel className="text-sm font-medium text-gray-700">
+                        Category
+                      </FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger className="bg-white">
+                          <SelectTrigger className="bg-white border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 transition-colors">
                             <SelectValue placeholder="Select category" />
                           </SelectTrigger>
                         </FormControl>
@@ -244,10 +398,12 @@ export function CreateItemForm() {
                   name="subcategory"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-semibold">SUBCATEGORY</FormLabel>
+                      <FormLabel className="text-sm font-medium text-gray-700">
+                        Subcategory
+                      </FormLabel>
                       <Select onValueChange={field.onChange} value={field.value} disabled={!watchCategory}>
                         <FormControl>
-                          <SelectTrigger className="bg-white">
+                          <SelectTrigger className="bg-white border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 transition-colors">
                             <SelectValue placeholder={watchCategory ? "Select subcategory" : "Select category first"} />
                           </SelectTrigger>
                         </FormControl>
@@ -265,24 +421,138 @@ export function CreateItemForm() {
                   )}
                 />
               </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="variation"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-gray-700">
+                        Variation
+                      </FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value} disabled={!watchCategory}>
+                        <FormControl>
+                          <SelectTrigger className="bg-white border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 transition-colors">
+                            <SelectValue placeholder={watchCategory ? "Select variation" : "Select category first"} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {watchCategory &&
+                            getVariationOptions(watchCategory).map((variation) => (
+                              <SelectItem key={variation.value} value={variation.value}>
+                                {variation.label}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="brand"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-gray-700">
+                        Brand
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          className="bg-white border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                          placeholder="Enter brand name"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </TabsContent>
 
-            <TabsContent value="supplier" className="space-y-6 pt-4">
-              {/* Supplier information fields */}
+            <TabsContent value="supplier" className="space-y-6 pt-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <FormField
+                  control={form.control}
+                  name="supplier_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-gray-700">
+                        Supplier Name
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          className="bg-white border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                          placeholder="Enter supplier name"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="supplier_contact"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-gray-700">
+                        Supplier Contact
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          className="bg-white border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                          placeholder="Enter contact information"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="supplier_notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-gray-700">
+                        Supplier Notes
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          className="bg-white border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                          placeholder="Enter additional notes"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </TabsContent>
           </Tabs>
 
-          <div className="flex justify-end gap-3 mt-8">
+          <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
             <Button
               type="button"
               variant="outline"
               onClick={() => router.back()}
-              className="px-6"
+              className="px-6 border-gray-200 hover:bg-gray-50"
               disabled={isSubmitting}
             >
               Cancel
             </Button>
-            <Button type="submit" className="bg-[#b12025] hover:bg-[#b12025]/90 px-6" disabled={isSubmitting}>
+            <Button 
+              type="submit" 
+              className="bg-[#b12025] hover:bg-[#8a1a1f] text-white px-6 transition-colors" 
+              disabled={isSubmitting}
+            >
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
