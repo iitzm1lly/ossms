@@ -144,16 +144,18 @@ NEXT_PUBLIC_APP_VERSION=1.0.0
 ```
 
 ### Email Configuration (Optional)
-For password reset functionality, set these environment variables:
-```env
-SMTP_EMAIL=your-email@gmail.com
-SMTP_PASSWORD=your-app-password
+For password reset functionality, update the hardcoded credentials in `src-tauri/src/main.rs`:
+
+```rust
+// Hardcoded email configuration
+const SMTP_EMAIL: &str = "your-email@gmail.com";  // Replace with your email
+const SMTP_PASSWORD: &str = "your-app-password";  // Replace with your app password
 ```
 
 **Note**: For Gmail, you need to:
 1. Enable 2-Factor Authentication
 2. Generate an App Password (16 characters, no spaces)
-3. Use the App Password as `SMTP_PASSWORD`
+3. Replace the values in the code with your actual credentials
 
 ### Database
 The application uses SQLite for data storage. The database is automatically created at:
