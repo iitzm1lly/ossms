@@ -17,6 +17,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import tauriApiService from "./services/tauriApiService"
+import { getVariationOptions } from "@/lib/variation-utils"
+import { calculateStockStatus } from "@/lib/utils"
 
 // Define categories
 const categories = [
@@ -88,6 +90,8 @@ interface Item {
   description?: string
   category?: string
   subcategory?: string
+  variation?: string
+  brand?: string
   supplier_name?: string
   supplier_contact?: string
   supplier_notes?: string
@@ -136,6 +140,8 @@ export function UpdateItemDialog({ open, onOpenChange, item, onSuccess }: Update
     description: item.description || "",
     category: item.category || "",
     subcategory: item.subcategory || "",
+    variation: item.variation || "",
+    brand: item.brand || "",
     supplierName: item.supplier_name || "",
     supplierContact: item.supplier_contact || "",
     supplierNotes: item.supplier_notes || "",
@@ -153,6 +159,8 @@ export function UpdateItemDialog({ open, onOpenChange, item, onSuccess }: Update
       description: item.description || "",
       category: item.category || "",
       subcategory: item.subcategory || "",
+      variation: item.variation || "",
+      brand: item.brand || "",
       supplierName: item.supplier_name || "",
       supplierContact: item.supplier_contact || "",
       supplierNotes: item.supplier_notes || "",
@@ -223,6 +231,11 @@ export function UpdateItemDialog({ open, onOpenChange, item, onSuccess }: Update
     // Validate required fields
     const errors: { [key: string]: string } = {}
     
+    // Validate brand field
+    if (!formData.brand || formData.brand.trim() === "") {
+      errors.brand = "Brand name is required"
+    }
+    
     // Validate stock adjustment fields
     const addBulk = Number.parseInt(formData.addBulk) || 0
     const addPieces = Number.parseInt(formData.addPieces) || 0
@@ -253,15 +266,21 @@ export function UpdateItemDialog({ open, onOpenChange, item, onSuccess }: Update
       const newQuantity = currentQuantity + quantityChange
       
       const supplyId = item.originalId || item.id.toString()
+      // Calculate new status based on updated quantity
+      const minQuantity = item.low_threshold_bulk || item.low_threshold_pcs || 10
+      const newStatus = calculateStockStatus(newQuantity, minQuantity).status
+      
       const supplyData = {
         name: item.name, // Use original item name
         description: formData.description || item.description || null,
         category: formData.category || item.category || null,
         subcategory: formData.subcategory || item.subcategory || null,
+        variation: formData.variation || item.variation || null,
+        brand: formData.brand || item.brand || null,
         quantity: newQuantity,
         unit: item.unit_type || item.unit || "box",
-        min_quantity: item.low_threshold_bulk || item.low_threshold_pcs || 0,
-        status: item.status || item.stock_status || "Unknown",
+        min_quantity: minQuantity,
+        status: newStatus,
         supplier_name: formData.supplierName || item.supplier_name || null,
         supplier_contact: formData.supplierContact || item.supplier_contact || null,
         supplier_notes: formData.supplierNotes || item.supplier_notes || null,
@@ -646,6 +665,51 @@ export function UpdateItemDialog({ open, onOpenChange, item, onSuccess }: Update
                           </Select>
                         </div>
                       )}
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {formData.category && (
+                        <div className="space-y-2">
+                          <Label htmlFor="variation" className="text-sm font-medium text-gray-700">
+                            Variation
+                          </Label>
+                          <Select
+                            value={formData.variation}
+                            onValueChange={(value) => handleSelectChange("variation", value)}
+                          >
+                            <SelectTrigger className="bg-white/50 border-gray-200 focus:border-blue-500 focus:ring-blue-500/20">
+                              <SelectValue placeholder="Select variation" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {formData.category &&
+                                getVariationOptions(formData.category).map((variation) => (
+                                  <SelectItem key={variation.value} value={variation.value}>
+                                    {variation.label}
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+
+                      <div className="space-y-2">
+                        <Label htmlFor="brand" className="text-sm font-medium text-gray-700">
+                          Brand *
+                        </Label>
+                        <Input
+                          id="brand"
+                          name="brand"
+                          value={formData.brand}
+                          onChange={handleChange}
+                          placeholder="Enter brand name"
+                          className={`bg-white/50 border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 ${
+                            validationErrors.brand ? 'border-red-500' : ''
+                          }`}
+                        />
+                        {validationErrors.brand && (
+                          <p className="text-sm text-red-600">{validationErrors.brand}</p>
+                        )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
