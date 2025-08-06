@@ -35,10 +35,8 @@ export default function LoginPage() {
         // Test if Tauri is available by checking database status
         await tauriApiService.checkDatabaseStatus();
         
-        console.log('Tauri API service initialized successfully');
         setIsInitializing(false);
       } catch (error) {
-        console.error('Failed to initialize Tauri API service:', error);
         // Still allow the form to be shown even if Tauri is not available
         setIsInitializing(false);
       }
@@ -97,7 +95,6 @@ export default function LoginPage() {
         setErrors({ general: response.error || "Login failed" })
       }
     } catch (error: any) {
-      console.error('Login error:', error)
       setErrors({ general: error.message || "An error occurred during login" })
     } finally {
       setIsLoading(false)
