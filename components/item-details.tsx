@@ -4,6 +4,8 @@ import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { getCategoryOptions, getSubcategoryLabel } from "@/lib/category-utils"
+import { getVariationLabel } from "@/lib/variation-utils"
+import { getStockStatusColors } from "@/lib/utils"
 
 // Define Item interface locally to avoid mock-store conflicts
 interface Item {
@@ -26,6 +28,8 @@ interface Item {
   description?: string
   category?: string
   subcategory?: string
+  variation?: string
+  brand?: string
   supplier_name?: string
   supplier_contact?: string
   supplier_notes?: string
@@ -88,6 +92,18 @@ export function ItemDetails({ item }: ItemDetailsProps) {
                     <p className="text-base font-semibold text-gray-900">{subcategoryLabel}</p>
                   </div>
                 )}
+                {item.variation && (
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <p className="text-sm font-medium text-gray-600 mb-1">Variation</p>
+                    <p className="text-base font-semibold text-gray-900">{getVariationLabel(item.category || "", item.variation)}</p>
+                  </div>
+                )}
+                {item.brand && (
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <p className="text-sm font-medium text-gray-600 mb-1">Brand</p>
+                    <p className="text-base font-semibold text-gray-900">{item.brand}</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -116,13 +132,7 @@ export function ItemDetails({ item }: ItemDetailsProps) {
                   </p>
                   <div className="mt-2">
                     <Badge
-                      className={
-                        (item.status || item.stock_status) === "Low"
-                          ? "bg-red-100 text-red-800 border-red-200 hover:bg-red-200"
-                          : (item.status || item.stock_status) === "Moderate"
-                            ? "bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200"
-                            : "bg-green-100 text-green-800 border-green-200 hover:bg-green-200"
-                      }
+                      className={`${getStockStatusColors(item.status || item.stock_status).bg} ${getStockStatusColors(item.status || item.stock_status).text} ${getStockStatusColors(item.status || item.stock_status).border} ${getStockStatusColors(item.status || item.stock_status).hover}`}
                     >
                       {item.status || item.stock_status || "Unknown"}
                     </Badge>
