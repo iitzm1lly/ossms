@@ -46,6 +46,8 @@ struct CreateSupplyRequest {
     description: Option<String>,
     category: String,
     subcategory: Option<String>,
+    variation: Option<String>,
+    brand: Option<String>,
     quantity: i32,
     unit: String,
     min_quantity: i32,
@@ -188,6 +190,8 @@ async fn create_supply(
         description: request.description,
         category: request.category,
         subcategory: request.subcategory,
+        variation: request.variation,
+        brand: request.brand,
         quantity: request.quantity,
         unit: request.unit,
         min_quantity: request.min_quantity,
@@ -234,6 +238,9 @@ async fn update_supply(
         request.name.is_some() || 
         request.description.is_some() || 
         request.category.is_some() || 
+        request.subcategory.is_some() ||
+        request.variation.is_some() ||
+        request.brand.is_some() ||
         request.unit.is_some() || 
         request.min_quantity.is_some() || 
         request.status.is_some() || 
@@ -489,6 +496,16 @@ async fn delete_user(
     Ok("User deleted successfully".to_string())
 }
 
+#[tauri::command]
+async fn recalculate_stock_status(state: State<'_, AppState>) -> Result<String, String> {
+    let db = state.db.lock().map_err(|_| "Database lock failed")?;
+    
+    match db.recalculate_all_stock_status() {
+        Ok(_) => Ok("Stock status recalculated successfully".to_string()),
+        Err(e) => Err(format!("Failed to recalculate stock status: {}", e)),
+    }
+}
+
 
 
 #[tauri::command]
@@ -582,6 +599,7 @@ fn main() {
             get_supply_histories,
             delete_supply,
             delete_supply_history,
+            recalculate_stock_status,
             forgot_password,
             reset_password,
             get_version,
