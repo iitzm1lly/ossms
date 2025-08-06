@@ -8,24 +8,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Production build script (`build-production.ps1`) for automated builds
-- Email functionality with SMTP support for password resets
-- Comprehensive role-based access control (Admin, Staff, Viewer)
-- Password reset functionality with token-based authentication
-- Production-ready documentation updates
+- **Stock Status Calculation Improvements**: Centralized and consistent stock status calculation across all components
+- **Modernized PDF Reports**: Updated low stock and stock movement reports with institutional branding and optimized layout
+- **Enhanced User Experience**: Added hover tooltips explaining stock status thresholds
+- **Space-Optimized PDFs**: Reduced margins, padding, and font sizes for better content density
+- **Institutional Branding**: Added UST and CICS logos to PDF reports
+- **Improved Report Filtering**: Low stock reports now correctly filter to show only low stock items
 
 ### Changed
-- Optimized Rust compilation settings for production builds
-- Updated Next.js configuration for better performance
-- Enhanced build scripts for automated production deployment
-- Improved error handling and user feedback
+- **Stock Status Logic**: Fixed inconsistent calculations that caused items like AA Batteries (18 pieces) to show incorrect status
+- **PDF Report Styling**: Updated color scheme to match dashboard design with professional layout
+- **Report Content**: Updated summary sections to reflect only relevant data (low stock items only)
+- **Debug Information**: Removed all debug console logs and test files for cleaner production code
+- **Typography**: Optimized font sizes and spacing in PDF reports for better readability
 
 ### Fixed
-- Staff role permissions and dashboard access issues
-- Case sensitivity issues with user roles
-- Email sending functionality in production environment
-- Build optimization and linking issues on Windows
-- Database initialization and user permission handling
+- **Stock Status Consistency**: All components now use the same calculation logic
+- **Report Accuracy**: Low stock reports now show only items with "Low" status
+- **PDF Layout**: Improved space usage and content density in reports
+- **User Interface**: Added helpful tooltips explaining stock status thresholds
+- **Code Cleanliness**: Removed obsolete debug files and console statements
 
 ## [1.0.0] - 2024-01-XX
 
