@@ -10,13 +10,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { AlertTriangle, Package, Plus, Search, Filter, Grid, List, Edit, Trash2, Eye, ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { AlertTriangle, Package, Plus, Search, Filter, Grid, List, Edit, Trash2, Eye, ChevronLeft, ChevronRight, MoreHorizontal, ArrowUpDown, ArrowUp, ArrowDown, Info, RefreshCw } from "lucide-react"
 import { toast } from "sonner"
 import { motion, AnimatePresence } from "framer-motion"
 import tauriApiService from "@/components/services/tauriApiService"
 import { UpdateItemDialog } from "@/components/update-item-dialog"
 import { ItemDetails } from "@/components/item-details"
 import { getCurrentUser, hasPermission } from "@/lib/permissions"
+import { calculateStockStatus, getStockStatusColors } from "@/lib/utils"
 
 // Animation variants
 const staggerContainer = {
@@ -86,12 +88,18 @@ interface Item {
   description?: string
   category?: string
   subcategory?: string
+  variation?: string
+  brand?: string
   supplier_name?: string
   supplier_contact?: string
   supplier_notes?: string
   pieces_per_bulk?: number
   unit?: string
 }
+
+// Sort type
+type SortField = 'name' | 'category' | 'stock' | 'status' | 'supplier'
+type SortDirection = 'asc' | 'desc'
 
 // Categories and subcategories data - matching add-item page
 const categories = [
@@ -112,77 +120,73 @@ const subcategories = {
   ],
   paper: [
     { value: "bond_paper", label: "Bond Paper" },
+    { value: "specialty_paper", label: "Specialty Paper" },
     { value: "notebooks", label: "Notebooks" },
     { value: "sticky_notes", label: "Sticky Notes" },
-    { value: "specialty_paper", label: "Specialty Paper" },
   ],
   filing: [
     { value: "folders", label: "Folders" },
     { value: "binders", label: "Binders" },
-    { value: "clips", label: "Clips & Fasteners" },
+    { value: "clips", label: "Clips" },
     { value: "storage_boxes", label: "Storage Boxes" },
   ],
   desk: [
     { value: "staplers", label: "Staplers" },
-    { value: "tape", label: "Tape & Adhesives" },
+    { value: "tape", label: "Tape" },
     { value: "scissors", label: "Scissors" },
-    { value: "organizers", label: "Desk Organizers" },
+    { value: "organizers", label: "Organizers" },
   ],
   tech: [
     { value: "usb_drives", label: "USB Drives" },
-    { value: "cables", label: "Cables" },
-    { value: "peripherals", label: "Computer Peripherals" },
     { value: "batteries", label: "Batteries" },
+    { value: "cables", label: "Cables" },
+    { value: "peripherals", label: "Peripherals" },
   ],
   other: [
-    { value: "cleaning", label: "Cleaning Supplies" },
+    { value: "cleaning", label: "Cleaning" },
     { value: "misc", label: "Miscellaneous" },
   ],
 }
 
-// Helper function to convert Supply to Item
 const convertSupplyToItem = (supply: any, index: number): Item => {
-  // Use the original supply ID (UUID) for database operations, but create a numeric ID for React keys
-  const originalId = supply.id // This is the UUID from the database
-  const numericId = index + 1 // This is for React keys only
+  const quantity = supply.quantity || 0
+  const min_quantity = supply.min_quantity || 10 // Default to 10 if not set
+  const pieces_per_bulk = supply.pieces_per_bulk || 1
   
-  // Calculate status based on quantity vs thresholds
-  const lowThreshold = supply.min_quantity
-  const moderateThreshold = supply.min_quantity * 2
-  const highThreshold = supply.min_quantity * 3
+  // Calculate bulk and pieces quantities
+  const bulk_quantity = Math.floor(quantity / pieces_per_bulk)
+  const pieces_quantity = quantity % pieces_per_bulk
   
-  let status = "High"
-  if (supply.quantity <= lowThreshold) {
-    status = "Low"
-  } else if (supply.quantity <= moderateThreshold) {
-    status = "Moderate"
-  }
+  // Use consistent stock status calculation
+  const stockStatus = calculateStockStatus(quantity, min_quantity)
   
   return {
-    id: numericId, // Use numeric ID for React keys to avoid duplicate key warnings
-    originalId: originalId, // Store the original UUID for database operations
+    id: index + 1,
+    originalId: supply.id,
     name: supply.name,
     unit_type: supply.unit,
-    bulk_quantity: Math.floor(supply.quantity / (supply.pieces_per_bulk || 12)),
-    pieces_quantity: supply.quantity,
-    pieces: supply.quantity,
+    bulk_quantity,
+    pieces_quantity,
+    pieces: quantity,
     created_at: supply.created_at,
     updated_at: supply.updated_at,
-    low_threshold_bulk: supply.min_quantity,
-    low_threshold_pcs: supply.min_quantity,
-    moderate_threshold_bulk: supply.min_quantity * 2,
-    moderate_threshold_pcs: supply.min_quantity * 2,
-    high_threshold_bulk: supply.min_quantity * 3,
-    high_threshold_pcs: supply.min_quantity * 3,
-    stock_status: status,
-    status: status,
+    low_threshold_bulk: Math.floor(min_quantity / pieces_per_bulk),
+    low_threshold_pcs: min_quantity % pieces_per_bulk,
+    moderate_threshold_bulk: Math.floor((min_quantity * 1.5) / pieces_per_bulk),
+    moderate_threshold_pcs: Math.floor((min_quantity * 1.5) % pieces_per_bulk),
+    high_threshold_bulk: Math.floor((min_quantity * 2) / pieces_per_bulk),
+    high_threshold_pcs: Math.floor((min_quantity * 2) % pieces_per_bulk),
+    stock_status: supply.status,
+    status: stockStatus.status,
     description: supply.description,
     category: supply.category,
     subcategory: supply.subcategory,
-    supplier_name: supply.supplier_name || supply.supplier,
-    supplier_contact: supply.supplier_contact || "",
-    supplier_notes: supply.supplier_notes || "",
-    pieces_per_bulk: supply.pieces_per_bulk || 12,
+    variation: supply.variation,
+    brand: supply.brand,
+    supplier_name: supply.supplier_name,
+    supplier_contact: supply.supplier_contact,
+    supplier_notes: supply.supplier_notes,
+    pieces_per_bulk,
     unit: supply.unit,
   }
 }
@@ -191,73 +195,60 @@ export default function ViewItemsPage() {
   const router = useRouter()
   const [items, setItems] = useState<Item[]>([])
   const [loading, setLoading] = useState(true)
+  const [viewMode, setViewMode] = useState<"table" | "cards">("table")
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
-  const [selectedSubcategory, setSelectedSubcategory] = useState("all")
   const [selectedSupplier, setSelectedSupplier] = useState("all")
-  const [viewMode, setViewMode] = useState<"table" | "cards">("table")
   const [currentPage, setCurrentPage] = useState(1)
-  const [itemsPerPage, setItemsPerPage] = useState(10)
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [itemToDelete, setItemToDelete] = useState<Item | null>(null)
-  const [updateDialogOpen, setUpdateDialogOpen] = useState(false)
+  const [itemsPerPage] = useState(10)
   const [selectedItem, setSelectedItem] = useState<Item | null>(null)
-  const [viewDetailsOpen, setViewDetailsOpen] = useState(false)
-  const [itemToView, setItemToView] = useState<Item | null>(null)
+  const [showUpdateDialog, setShowUpdateDialog] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [showViewDialog, setShowViewDialog] = useState(false)
+  const [itemToDelete, setItemToDelete] = useState<Item | null>(null)
   const [userPermissions, setUserPermissions] = useState({
     canViewSupplies: false,
+    canCreateSupplies: false,
     canEditSupplies: false,
     canDeleteSupplies: false,
-    canCreateSupplies: false,
   })
+  
+  // Sorting state
+  const [sortField, setSortField] = useState<SortField>('name')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
 
-  // Load items on component mount
   useEffect(() => {
+    const checkPermissions = async () => {
+      try {
+        const user = await getCurrentUser()
+        if (user) {
+          setUserPermissions({
+            canViewSupplies: hasPermission(user, "supplies", "view"),
+            canCreateSupplies: hasPermission(user, "supplies", "create"),
+            canEditSupplies: hasPermission(user, "supplies", "edit"),
+            canDeleteSupplies: hasPermission(user, "supplies", "delete"),
+          })
+        }
+      } catch (error) {
+        console.error("Error checking permissions:", error)
+      }
+    }
+    
+    checkPermissions()
     loadItems()
   }, [])
-
-  // Check user permissions on component mount
-  useEffect(() => {
-    const user = getCurrentUser()
-    setUserPermissions({
-      canViewSupplies: hasPermission(user, 'supplies', 'view') || user?.role === 'admin' || user?.role === 'staff' || user?.role === 'viewer',
-      canEditSupplies: hasPermission(user, 'supplies', 'edit') || user?.role === 'admin' || user?.role === 'staff',
-      canDeleteSupplies: hasPermission(user, 'supplies', 'delete') || user?.role === 'admin',
-      canCreateSupplies: hasPermission(user, 'supplies', 'create') || user?.role === 'admin' || user?.role === 'staff',
-    })
-  }, [])
-
-  // Reset subcategory when category changes
-  useEffect(() => {
-    if (!selectedCategory || selectedCategory === "all") {
-      setSelectedSubcategory("all")
-    }
-  }, [selectedCategory])
-
-  // Reset to first page when filters change
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [searchTerm, selectedCategory, selectedSubcategory, selectedSupplier])
-
-  // Reset to first page when view mode changes
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [viewMode])
 
   const loadItems = async () => {
     try {
       setLoading(true)
       const supplies = await tauriApiService.getSupplies()
-      if (supplies && Array.isArray(supplies)) {
-        const convertedItems = supplies.map((supply, index) => convertSupplyToItem(supply, index))
-        setItems(convertedItems)
-          } else {
-        setItems([])
-        }
-      } catch (error) {
-      console.error('Error loading items:', error)
-      toast.error("Error loading items")
-      setItems([])
+      const convertedItems = supplies.map((supply: any, index: number) => 
+        convertSupplyToItem(supply, index)
+      )
+      setItems(convertedItems)
+    } catch (error) {
+      console.error("Error loading items:", error)
+      toast.error("Failed to load inventory items")
     } finally {
       setLoading(false)
     }
@@ -265,17 +256,17 @@ export default function ViewItemsPage() {
 
   const handleDeleteItem = async (item: Item) => {
     setItemToDelete(item)
-    setDeleteDialogOpen(true)
+    setShowDeleteDialog(true)
   }
 
   const handleEditItem = (item: Item) => {
     setSelectedItem(item)
-    setUpdateDialogOpen(true)
+    setShowUpdateDialog(true)
   }
 
   const handleViewItem = (item: Item) => {
-    setItemToView(item)
-    setViewDetailsOpen(true)
+    setSelectedItem(item)
+    setShowViewDialog(true)
   }
 
   const handleAddItem = () => {
@@ -288,101 +279,152 @@ export default function ViewItemsPage() {
     try {
       await tauriApiService.deleteSupply(itemToDelete.originalId)
       toast.success("Item deleted successfully")
-      setItems(items.filter(item => item.id !== itemToDelete.id))
-    } catch (error) {
-      console.error('Error deleting item:', error)
-      toast.error("Error deleting item")
-    } finally {
-      setDeleteDialogOpen(false)
+      setShowDeleteDialog(false)
       setItemToDelete(null)
+      loadItems() // Reload the list
+    } catch (error) {
+      console.error("Error deleting item:", error)
+      toast.error("Failed to delete item")
     }
   }
 
-  // Filter items based on search and filters
-  const filteredItems = useMemo(() => {
-    let filtered = [...items]
+  const handleUpdateSuccess = () => {
+    setShowUpdateDialog(false)
+    setSelectedItem(null)
+    loadItems() // Reload the list
+    toast.success("Item updated successfully")
+  }
 
-    // Search filter
-    if (searchTerm.trim()) {
-      const term = searchTerm.toLowerCase().trim()
-      filtered = filtered.filter(item => 
-        item.name.toLowerCase().includes(term) ||
-        (item.description && item.description.toLowerCase().includes(term)) ||
-        (item.category && item.category.toLowerCase().includes(term)) ||
-        (item.subcategory && item.subcategory.toLowerCase().includes(term)) ||
-        (item.supplier_name && item.supplier_name.toLowerCase().includes(term))
-      )
+  const handleRecalculateStockStatus = async () => {
+    try {
+      await tauriApiService.recalculateStockStatus()
+      toast.success("Stock status recalculated successfully")
+      loadItems() // Reload items to show updated statuses
+    } catch (error: any) {
+      toast.error(error.message || "Failed to recalculate stock status")
     }
+  }
 
-    // Category filter
-    if (selectedCategory && selectedCategory !== 'all') {
-      filtered = filtered.filter(item => item.category === selectedCategory)
+  // Sorting function
+  const sortItems = (items: Item[], field: SortField, direction: SortDirection): Item[] => {
+    return [...items].sort((a, b) => {
+      let aValue: any
+      let bValue: any
+
+      switch (field) {
+        case 'name':
+          aValue = a.name.toLowerCase()
+          bValue = b.name.toLowerCase()
+          break
+        case 'category':
+          aValue = (a.category || '').toLowerCase()
+          bValue = (b.category || '').toLowerCase()
+          break
+        case 'stock':
+          aValue = a.pieces
+          bValue = b.pieces
+          break
+        case 'status':
+          // Custom sorting for status: High (3) > Moderate (2) > Low (1)
+          const getStatusValue = (status: string) => {
+            const statusLower = status.toLowerCase()
+            if (statusLower === 'high') return 3
+            if (statusLower === 'moderate') return 2
+            if (statusLower === 'low') return 1
+            return 0 // Unknown status
+          }
+          aValue = getStatusValue(a.status || '')
+          bValue = getStatusValue(b.status || '')
+          break
+        case 'supplier':
+          aValue = (a.supplier_name || '').toLowerCase()
+          bValue = (b.supplier_name || '').toLowerCase()
+          break
+        default:
+          return 0
+      }
+
+      if (aValue < bValue) {
+        return direction === 'asc' ? -1 : 1
+      }
+      if (aValue > bValue) {
+        return direction === 'asc' ? 1 : -1
+      }
+      return 0
+    })
+  }
+
+  // Handle sort column click
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortField(field)
+      setSortDirection('asc')
     }
+  }
 
-    // Subcategory filter
-    if (selectedSubcategory && selectedSubcategory !== 'all') {
-      filtered = filtered.filter(item => item.subcategory === selectedSubcategory)
+  // Get sort icon
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="h-4 w-4" />
     }
+    return sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+  }
 
-    // Supplier filter
-    if (selectedSupplier && selectedSupplier !== 'all') {
-      filtered = filtered.filter(item => item.supplier_name === selectedSupplier)
-    }
+  // Filter and sort items
+  const filteredAndSortedItems = useMemo(() => {
+    let filtered = items.filter(item => {
+      const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           (item.brand && item.brand.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                           (item.category && item.category.toLowerCase().includes(searchTerm.toLowerCase()))
+      
+      const matchesCategory = selectedCategory === "all" || item.category === selectedCategory
+      const matchesSupplier = selectedSupplier === "all" || item.supplier_name === selectedSupplier
+      
+      return matchesSearch && matchesCategory && matchesSupplier
+    })
 
-    return filtered
-  }, [items, searchTerm, selectedCategory, selectedSubcategory, selectedSupplier])
+    return sortItems(filtered, sortField, sortDirection)
+  }, [items, searchTerm, selectedCategory, selectedSupplier, sortField, sortDirection])
 
-  // Pagination logic - different items per page based on view mode
-  const itemsPerPageForView = viewMode === "cards" ? 8 : 10
-  const totalPages = Math.ceil(filteredItems.length / itemsPerPageForView)
-  const startIndex = (currentPage - 1) * itemsPerPageForView
-  const endIndex = startIndex + itemsPerPageForView
-  const currentItems = filteredItems.slice(startIndex, endIndex)
+  const totalPages = Math.ceil(filteredAndSortedItems.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const currentItems = filteredAndSortedItems.slice(startIndex, endIndex)
 
-  // Helper functions
   const getItemName = (item: Item): string => {
-    return item.name || "Unnamed Item"
+    return item.name
   }
 
   const formatUnitType = (unitType: string): string => {
-    if (!unitType) return "Box"
     return unitType.charAt(0).toUpperCase() + unitType.slice(1)
   }
 
   const getCategoryLabel = (categoryValue: string | undefined): string => {
-    if (!categoryValue) return "Unknown"
-    const category = categories.find((c) => c.value === categoryValue)
-    return category ? category.label : categoryValue
+    const category = categories.find(cat => cat.value === categoryValue)
+    return category ? category.label : categoryValue || "Unknown"
   }
 
   const getSubcategoryLabel = (categoryValue: string | undefined, subcategoryValue: string | undefined): string => {
-    if (!categoryValue || !subcategoryValue) return subcategoryValue || "Unknown"
-
-    const subcategoryList = subcategories[categoryValue as keyof typeof subcategories]
-    if (!subcategoryList) return subcategoryValue
-
-    const subcategory = subcategoryList.find((s) => s.value === subcategoryValue)
+    if (!categoryValue || !subcategoryValue) return ""
+    const categorySubcategories = subcategories[categoryValue as keyof typeof subcategories]
+    const subcategory = categorySubcategories?.find(sub => sub.value === subcategoryValue)
     return subcategory ? subcategory.label : subcategoryValue
   }
 
   const resetFilters = () => {
     setSearchTerm("")
     setSelectedCategory("all")
-    setSelectedSubcategory("all")
     setSelectedSupplier("all")
+    setCurrentPage(1)
+    setSortField('name')
+    setSortDirection('asc')
   }
 
   const getStatusColor = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case "low":
-        return "bg-red-100 text-red-800"
-      case "moderate":
-        return "bg-yellow-100 text-yellow-800"
-      case "high":
-        return "bg-green-100 text-green-800"
-      default:
-        return "bg-gray-100 text-gray-800"
-    }
+    const colors = getStockStatusColors(status)
+    return `${colors.bg} ${colors.text}`
   }
 
   if (loading) {
@@ -427,6 +469,15 @@ export default function ViewItemsPage() {
                   <span>Cards</span>
                 </Button>
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRecalculateStockStatus}
+                className="flex items-center space-x-2 bg-white/80 backdrop-blur-sm border-white/20 hover:bg-white/90 transition-all duration-200"
+              >
+                <RefreshCw className="h-4 w-4" />
+                <span>Recalculate Status</span>
+              </Button>
             </div>
           </div>
         </div>
@@ -434,7 +485,7 @@ export default function ViewItemsPage() {
 
       {/* Stats Overview */}
        <motion.div 
-         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8"
+         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-8"
          variants={staggerContainer}
          initial="initial"
          animate="animate"
@@ -459,41 +510,109 @@ export default function ViewItemsPage() {
 
          <motion.div variants={staggerItem}>
         <AnimatedCard delay={0.2}>
-             <Card className="bg-white bg-opacity-80 backdrop-blur-sm border-white border-opacity-20">
-               <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Low Stock</p>
-                <p className="text-2xl font-bold text-red-600">
-                  {items.filter(item => item.status === "Low").length}
-                </p>
-              </div>
-              <div className="p-3 bg-red-100 rounded-xl">
-                <AlertTriangle className="h-6 w-6 text-red-600" />
-              </div>
-            </div>
-               </CardContent>
-             </Card>
+             <TooltipProvider>
+               <Tooltip>
+                 <TooltipTrigger asChild>
+                   <Card className="bg-white bg-opacity-80 backdrop-blur-sm border-white border-opacity-20 cursor-help">
+                     <CardContent className="p-6">
+                       <div className="flex items-center justify-between">
+                         <div>
+                           <div className="flex items-center gap-2">
+                             <p className="text-sm font-medium text-gray-600">Low Stock</p>
+                             <Info className="h-4 w-4 text-gray-400" />
+                           </div>
+                           <p className="text-2xl font-bold text-red-600">
+                             {items.filter(item => item.status === "Low").length}
+                           </p>
+                         </div>
+                         <div className="p-3 bg-red-100 rounded-xl">
+                           <AlertTriangle className="h-6 w-6 text-red-600" />
+                         </div>
+                       </div>
+                     </CardContent>
+                   </Card>
+                 </TooltipTrigger>
+                 <TooltipContent side="top" className="max-w-xs">
+                   <div className="space-y-2">
+                     <p className="font-semibold">Low Stock Threshold</p>
+                     <p className="text-sm">Items with quantity ≤ 10 pieces</p>
+                     <p className="text-xs text-gray-500">These items need immediate restocking</p>
+                   </div>
+                 </TooltipContent>
+               </Tooltip>
+             </TooltipProvider>
         </AnimatedCard>
          </motion.div>
 
          <motion.div variants={staggerItem}>
         <AnimatedCard delay={0.3}>
-             <Card className="bg-white bg-opacity-80 backdrop-blur-sm border-white border-opacity-20">
-               <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Moderate Stock</p>
-                <p className="text-2xl font-bold text-yellow-600">
-                  {items.filter(item => item.status === "Moderate").length}
-                </p>
-              </div>
-              <div className="p-3 bg-yellow-100 rounded-xl">
-                <AlertTriangle className="h-6 w-6 text-yellow-600" />
-              </div>
-            </div>
-               </CardContent>
-             </Card>
+             <TooltipProvider>
+               <Tooltip>
+                 <TooltipTrigger asChild>
+                   <Card className="bg-white bg-opacity-80 backdrop-blur-sm border-white border-opacity-20 cursor-help">
+                     <CardContent className="p-6">
+                       <div className="flex items-center justify-between">
+                         <div>
+                           <div className="flex items-center gap-2">
+                             <p className="text-sm font-medium text-gray-600">Moderate Stock</p>
+                             <Info className="h-4 w-4 text-gray-400" />
+                           </div>
+                           <p className="text-2xl font-bold text-yellow-600">
+                             {items.filter(item => item.status === "Moderate").length}
+                           </p>
+                         </div>
+                         <div className="p-3 bg-yellow-100 rounded-xl">
+                           <AlertTriangle className="h-6 w-6 text-yellow-600" />
+                         </div>
+                       </div>
+                     </CardContent>
+                   </Card>
+                 </TooltipTrigger>
+                 <TooltipContent side="top" className="max-w-xs">
+                   <div className="space-y-2">
+                     <p className="font-semibold">Moderate Stock Threshold</p>
+                     <p className="text-sm">Items with quantity 11-15 pieces</p>
+                     <p className="text-xs text-gray-500">These items should be monitored for restocking</p>
+                   </div>
+                 </TooltipContent>
+               </Tooltip>
+             </TooltipProvider>
+        </AnimatedCard>
+         </motion.div>
+
+         <motion.div variants={staggerItem}>
+        <AnimatedCard delay={0.35}>
+             <TooltipProvider>
+               <Tooltip>
+                 <TooltipTrigger asChild>
+                   <Card className="bg-white bg-opacity-80 backdrop-blur-sm border-white border-opacity-20 cursor-help">
+                     <CardContent className="p-6">
+                       <div className="flex items-center justify-between">
+                         <div>
+                           <div className="flex items-center gap-2">
+                             <p className="text-sm font-medium text-gray-600">High Stock</p>
+                             <Info className="h-4 w-4 text-gray-400" />
+                           </div>
+                           <p className="text-2xl font-bold text-green-600">
+                             {items.filter(item => item.status === "High").length}
+                           </p>
+                         </div>
+                         <div className="p-3 bg-green-100 rounded-xl">
+                           <Package className="h-6 w-6 text-green-600" />
+                         </div>
+                       </div>
+                     </CardContent>
+                   </Card>
+                 </TooltipTrigger>
+                 <TooltipContent side="top" className="max-w-xs">
+                   <div className="space-y-2">
+                     <p className="font-semibold">High Stock Threshold</p>
+                     <p className="text-sm">Items with quantity > 15 pieces</p>
+                     <p className="text-xs text-gray-500">These items have adequate stock levels</p>
+                   </div>
+                 </TooltipContent>
+               </Tooltip>
+             </TooltipProvider>
         </AnimatedCard>
          </motion.div>
 
@@ -504,29 +623,9 @@ export default function ViewItemsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Categories</p>
-                <p className="text-2xl font-bold text-gray-900">
-                       {new Set(items.map(item => item.category).filter(Boolean)).size}
+                <p className="text-2xl font-bold text-purple-600">
+                  {Array.from(new Set(items.map(item => item.category).filter(Boolean))).length}
                 </p>
-              </div>
-              <div className="p-3 bg-green-100 rounded-xl">
-                     <Package className="h-6 w-6 text-green-600" />
-              </div>
-            </div>
-               </CardContent>
-             </Card>
-        </AnimatedCard>
-         </motion.div>
-
-         <motion.div variants={staggerItem}>
-        <AnimatedCard delay={0.5}>
-             <Card className="bg-white bg-opacity-80 backdrop-blur-sm border-white border-opacity-20">
-               <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Suppliers</p>
-                     <p className="text-2xl font-bold text-gray-900">
-                       {new Set(items.map(item => item.supplier_name).filter(Boolean)).size}
-                     </p>
               </div>
               <div className="p-3 bg-purple-100 rounded-xl">
                 <Package className="h-6 w-6 text-purple-600" />
@@ -536,53 +635,73 @@ export default function ViewItemsPage() {
              </Card>
         </AnimatedCard>
          </motion.div>
+
+         <motion.div variants={staggerItem}>
+        <AnimatedCard delay={0.45}>
+             <Card className="bg-white bg-opacity-80 backdrop-blur-sm border-white border-opacity-20">
+               <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Suppliers</p>
+                <p className="text-2xl font-bold text-indigo-600">
+                  {Array.from(new Set(items.map(item => item.supplier_name).filter(Boolean))).length}
+                </p>
+              </div>
+              <div className="p-3 bg-indigo-100 rounded-xl">
+                <Package className="h-6 w-6 text-indigo-600" />
+              </div>
+            </div>
+               </CardContent>
+             </Card>
+        </AnimatedCard>
+         </motion.div>
        </motion.div>
 
       {/* Filters Section */}
-      <SlideIn delay={0.6}>
-        <Card className="mb-6 bg-white bg-opacity-80 backdrop-blur-sm border-white border-opacity-20">
+      <SlideIn delay={0.2}>
+        <Card className="bg-white bg-opacity-80 backdrop-blur-sm border-white border-opacity-20 mb-6">
           <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="flex flex-wrap items-center gap-4">
               {/* Search */}
-              <div className="relative">
+              <div className="relative flex-1 min-w-[200px]">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                  placeholder="Search items..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                <Input
+                  placeholder="Search items, brands, categories..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
-              />
-            </div>
+                />
+              </div>
 
               {/* Category Filter */}
-                  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="All Categories" />
-                    </SelectTrigger>
-                    <SelectContent>
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger className="min-w-[150px]">
+                  <SelectValue placeholder="All Categories" />
+                </SelectTrigger>
+                <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
-                      {categories.map((category) => (
-                        <SelectItem key={category.value} value={category.value}>
-                          {category.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {categories.map((category) => (
+                    <SelectItem key={category.value} value={category.value}>
+                      {category.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
               {/* Subcategory Filter */}
-                    <Select value={selectedSubcategory} onValueChange={setSelectedSubcategory}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="All Subcategories" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Subcategories</SelectItem>
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger className="min-w-[150px]">
+                  <SelectValue placeholder="All Subcategories" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Subcategories</SelectItem>
                   {selectedCategory !== "all" && subcategories[selectedCategory as keyof typeof subcategories]?.map((subcategory) => (
-                          <SelectItem key={subcategory.value} value={subcategory.value}>
-                            {subcategory.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <SelectItem key={subcategory.value} value={subcategory.value}>
+                      {subcategory.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
               {/* Supplier Filter */}
                   <Select value={selectedSupplier} onValueChange={setSelectedSupplier}>
@@ -626,7 +745,7 @@ export default function ViewItemsPage() {
             <Card className="bg-white bg-opacity-80 backdrop-blur-sm border-white border-opacity-20">
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
-                  <span>Inventory Items ({filteredItems.length})</span>
+                  <span>Inventory Items ({filteredAndSortedItems.length})</span>
                   {userPermissions.canCreateSupplies && (
                     <Button 
                       className="flex items-center space-x-2"
@@ -642,11 +761,56 @@ export default function ViewItemsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Category</TableHead>
-                      <TableHead>Stock</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Supplier</TableHead>
+                      <TableHead>
+                        <Button
+                          variant="ghost"
+                          onClick={() => handleSort('name')}
+                          className="flex items-center space-x-1 p-0 h-auto font-semibold"
+                        >
+                          <span>Name</span>
+                          {getSortIcon('name')}
+                        </Button>
+                      </TableHead>
+                      <TableHead>
+                        <Button
+                          variant="ghost"
+                          onClick={() => handleSort('category')}
+                          className="flex items-center space-x-1 p-0 h-auto font-semibold"
+                        >
+                          <span>Category</span>
+                          {getSortIcon('category')}
+                        </Button>
+                      </TableHead>
+                      <TableHead>
+                        <Button
+                          variant="ghost"
+                          onClick={() => handleSort('stock')}
+                          className="flex items-center space-x-1 p-0 h-auto font-semibold"
+                        >
+                          <span>Stock</span>
+                          {getSortIcon('stock')}
+                        </Button>
+                      </TableHead>
+                      <TableHead>
+                        <Button
+                          variant="ghost"
+                          onClick={() => handleSort('status')}
+                          className="flex items-center space-x-1 p-0 h-auto font-semibold"
+                        >
+                          <span>Status</span>
+                          {getSortIcon('status')}
+                        </Button>
+                      </TableHead>
+                      <TableHead>
+                        <Button
+                          variant="ghost"
+                          onClick={() => handleSort('supplier')}
+                          className="flex items-center space-x-1 p-0 h-auto font-semibold"
+                        >
+                          <span>Supplier</span>
+                          {getSortIcon('supplier')}
+                        </Button>
+                      </TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -659,7 +823,16 @@ export default function ViewItemsPage() {
                         transition={{ duration: 0.3, delay: index * 0.05 }}
                         className="hover:bg-gray-50"
                       >
-                        <TableCell className="font-medium">{getItemName(item)}</TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{getItemName(item)}</div>
+                            {item.brand && (
+                              <div className="text-sm text-gray-500 font-medium">
+                                {item.brand}
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <div>
                             <div className="font-medium">{getCategoryLabel(item.category || "")}</div>
@@ -721,7 +894,7 @@ export default function ViewItemsPage() {
                 {totalPages > 1 && (
                   <div className="flex items-center justify-between mt-6">
                     <div className="text-sm text-gray-600">
-                      Showing {startIndex + 1} to {Math.min(endIndex, filteredItems.length)} of {filteredItems.length} items
+                      Showing {startIndex + 1} to {Math.min(endIndex, filteredAndSortedItems.length)} of {filteredAndSortedItems.length} items
                     </div>
                     <div className="flex items-center space-x-2">
                               <Button
@@ -768,108 +941,101 @@ export default function ViewItemsPage() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <Card className="bg-white bg-opacity-80 backdrop-blur-sm border-white border-opacity-20 mb-6">
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span>Inventory Items ({filteredItems.length})</span>
-                  {userPermissions.canCreateSupplies && (
-                    <Button 
-                      className="flex items-center space-x-2"
-                      onClick={handleAddItem}
-                    >
-                      <Plus className="h-4 w-4" />
-                      <span>Add Item</span>
-                    </Button>
-                  )}
-                </CardTitle>
-              </CardHeader>
-            </Card>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {currentItems.map((item, index) => (
                 <motion.div
                   key={item.id}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: index * 0.05 }}
-                  whileHover={{ scale: 1.02 }}
                 >
-                  <Card className="bg-white bg-opacity-80 backdrop-blur-sm border-white border-opacity-20 h-full">
-                    <CardHeader>
-                      <CardTitle className="text-lg">{getItemName(item)}</CardTitle>
-                      <div className="flex items-center justify-between">
+                  <Card className="bg-white bg-opacity-80 backdrop-blur-sm border-white border-opacity-20 hover:shadow-lg transition-shadow duration-200">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <CardTitle className="text-lg">{getItemName(item)}</CardTitle>
+                          {item.brand && (
+                            <p className="text-sm text-gray-500 font-medium mt-1">
+                              {item.brand}
+                            </p>
+                          )}
+                        </div>
                         <Badge className={getStatusColor(item.status || "")}>
                           {item.status || "Unknown"}
                         </Badge>
-                        <Button size="sm" variant="ghost">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                    </div>
-                  </CardHeader>
-                    <CardContent>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-0">
                       <div className="space-y-3">
-                      <div>
+                        <div>
                           <p className="text-sm font-medium text-gray-600">Category</p>
-                          <p className="text-sm">{getCategoryLabel(item.category || "")}</p>
-                              {item.subcategory && (
-                            <p className="text-xs text-gray-500">
+                          <p className="text-sm text-gray-900">{getCategoryLabel(item.category || "")}</p>
+                          {item.subcategory && (
+                            <p className="text-xs text-gray-500 mt-1">
                               {getSubcategoryLabel(item.category || "", item.subcategory)}
                             </p>
                           )}
-                      </div>
-                      <div>
+                        </div>
+                        <div>
                           <p className="text-sm font-medium text-gray-600">Stock</p>
-                          <p className="text-sm">{item.bulk_quantity} {formatUnitType(item.unit_type)}</p>
-                          <p className="text-xs text-gray-500">{item.pieces_quantity} pieces</p>
-                      </div>
-                      <div>
+                          <p className="text-sm text-gray-900">
+                            {item.bulk_quantity} {formatUnitType(item.unit_type)} ({item.pieces_quantity} pieces)
+                          </p>
+                        </div>
+                        <div>
                           <p className="text-sm font-medium text-gray-600">Supplier</p>
-                          <p className="text-sm">{item.supplier_name || "N/A"}</p>
-                      </div>
+                          <p className="text-sm text-gray-900">{item.supplier_name || "N/A"}</p>
+                        </div>
                         <div className="flex items-center space-x-2 pt-2">
                           <Button
                             size="sm" 
-                            variant="ghost" 
-                            className="flex-1"
+                            variant="ghost"
                             onClick={() => handleViewItem(item)}
+                            className="flex-1"
                           >
                             <Eye className="h-4 w-4 mr-1" />
                             View
                           </Button>
                           {userPermissions.canEditSupplies && (
-                            <Button
-                              size="sm"
-                              variant="ghost" 
-                              className="flex-1"
+                            <Button 
+                              size="sm" 
+                              variant="ghost"
                               onClick={() => handleEditItem(item)}
+                              className="flex-1"
                             >
                               <Edit className="h-4 w-4 mr-1" />
                               Edit
                             </Button>
                           )}
                           {userPermissions.canDeleteSupplies && (
-                            <Button
-                              size="sm"
+                            <Button 
+                              size="sm" 
                               variant="ghost" 
                               onClick={() => handleDeleteItem(item)}
-                              className="text-red-600 hover:text-red-700"
+                              className="text-red-600 hover:text-red-700 flex-1"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4 mr-1" />
+                              Delete
                             </Button>
                           )}
                         </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </motion.div>
               ))}
-              </div>
+            </div>
 
             {/* Pagination for Cards */}
-        {totalPages > 1 && (
-              <div className="flex items-center justify-center mt-8">
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between mt-6">
+                <div className="text-sm text-gray-600">
+                  Showing {startIndex + 1} to {Math.min(endIndex, filteredAndSortedItems.length)} of {filteredAndSortedItems.length} items
+                </div>
                 <div className="flex items-center space-x-2">
                   <Button
                     variant="outline"
+                    size="sm"
                     onClick={() => setCurrentPage(currentPage - 1)}
                     disabled={currentPage === 1}
                   >
@@ -882,124 +1048,70 @@ export default function ViewItemsPage() {
                         key={page}
                         variant={currentPage === page ? "default" : "outline"}
                         size="sm"
-                          onClick={() => setCurrentPage(page)}
-                        >
-                          {page}
+                        onClick={() => setCurrentPage(page)}
+                      >
+                        {page}
                       </Button>
                     ))}
-                                          </div>
+                  </div>
                   <Button
                     variant="outline"
+                    size="sm"
                     onClick={() => setCurrentPage(currentPage + 1)}
                     disabled={currentPage === totalPages}
                   >
                     Next
                     <ChevronRight className="h-4 w-4" />
                   </Button>
-            </div>
+                </div>
               </div>
             )}
           </motion.div>
         )}
       </AnimatePresence>
 
+      {/* Dialogs */}
+      {showUpdateDialog && selectedItem && (
+        <UpdateItemDialog
+          item={selectedItem}
+          onClose={() => setShowUpdateDialog(false)}
+          onSuccess={handleUpdateSuccess}
+        />
+      )}
+
+      {showViewDialog && selectedItem && (
+        <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Item Details</DialogTitle>
+              <DialogDescription>
+                Detailed information about the selected item
+              </DialogDescription>
+            </DialogHeader>
+            <ItemDetails item={selectedItem} />
+          </DialogContent>
+        </Dialog>
+      )}
+
       {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-              <Trash2 className="h-6 w-6 text-red-600" />
-      </div>
-            <DialogTitle className="text-xl font-semibold text-gray-900">Delete Item</DialogTitle>
-            <DialogDescription className="text-gray-600 mt-2">
-              Are you sure you want to delete <strong>"{itemToDelete?.name}"</strong>? 
-              <br />
-              This action cannot be undone and will permanently remove the item from your inventory.
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Delete</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{itemToDelete?.name}"? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-0">
-            <Button 
-              variant="outline" 
-              onClick={() => setDeleteDialogOpen(false)}
-              className="w-full sm:w-auto order-2 sm:order-1"
-            >
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
               Cancel
             </Button>
-            <Button 
-              variant="destructive" 
-              onClick={confirmDelete}
-              className="w-full sm:w-auto order-1 sm:order-2"
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete Item
+            <Button variant="destructive" onClick={confirmDelete}>
+              Delete
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Update Item Dialog */}
-      {selectedItem && (
-        <UpdateItemDialog
-          open={updateDialogOpen}
-          onOpenChange={(open) => {
-            setUpdateDialogOpen(open)
-            if (!open) setSelectedItem(null)
-          }}
-          item={selectedItem}
-          onSuccess={loadItems}
-        />
-      )}
-
-      {/* View Item Details Sheet */}
-      {itemToView && (
-        <Sheet open={viewDetailsOpen} onOpenChange={setViewDetailsOpen}>
-          <SheetContent className="w-[500px] sm:w-[600px] bg-gradient-to-br from-amber-100 via-amber-50 to-yellow-50 p-0">
-            <div className="bg-gradient-to-r from-red-600 to-red-800 text-white p-6 rounded-t-lg">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center space-x-3">
-                  <Package className="h-6 w-6" />
-                  <SheetTitle className="text-xl font-bold">Item Details</SheetTitle>
-                </div>
-                </div>
-              <div className="flex items-center justify-between">
-                <div className="text-sm font-medium text-white">
-                  Detailed information about <strong className="text-yellow-200">{getItemName(itemToView)}</strong>
-              </div>
-                <div className="flex items-center space-x-2 bg-white/20 rounded-full px-3 py-1">
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                  <span className="text-sm font-medium">Live Data</span>
-            </div>
-                    </div>
-                    </div>
-            
-            <div className="p-6 max-h-[calc(100vh-200px)] overflow-y-auto">
-              <ItemDetails item={itemToView} />
-              
-              {/* Action buttons at the bottom */}
-              <div className="mt-6 pt-6 border-t border-gray-200 flex flex-col sm:flex-row gap-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                    setViewDetailsOpen(false)
-                    setTimeout(() => handleEditItem(itemToView), 100)
-              }}
-                  className="flex-1 sm:flex-none"
-            >
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit Item
-            </Button>
-            <Button
-                  variant="outline" 
-                  onClick={() => setViewDetailsOpen(false)}
-                  className="flex-1 sm:flex-none"
-                >
-                  Close
-            </Button>
-              </div>
-            </div>
-          </SheetContent>
-        </Sheet>
-      )}
     </div>
   )
 }
