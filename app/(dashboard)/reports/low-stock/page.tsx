@@ -25,6 +25,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { DateRange } from "react-day-picker"
 import { FileText, Download, BarChart3, TrendingDown, AlertTriangle, Calendar, Filter, RefreshCw } from "lucide-react"
 import html2canvas from "html2canvas"
+import { calculateStockStatus } from "@/lib/utils"
 
 const getRandomColor = () => {
   const letters = "0123456789ABCDEF"
@@ -39,13 +40,16 @@ const styles = StyleSheet.create({
   page: {
     flexDirection: "column",
     backgroundColor: "#ffffff",
-    padding: 25,
+    padding: 20,
     fontFamily: "Helvetica",
   },
   header: {
-    borderBottom: "1px solid #b12025",
+    borderBottom: "2px solid #b12025",
     paddingBottom: 15,
-    marginBottom: 20,
+    marginBottom: 15,
+    backgroundColor: "#f5f5dc",
+    padding: 12,
+    borderRadius: 6,
   },
   companyInfo: {
     flexDirection: "row",
@@ -53,67 +57,118 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 10,
   },
+  logoSection: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  ustLogo: {
+    width: 32,
+    height: 32,
+    backgroundColor: "#e3f2fd",
+    borderRadius: 16,
+    border: "2px solid #2196f3",
+    padding: 4,
+  },
+  cicsLogo: {
+    width: 32,
+    height: 32,
+    backgroundColor: "#424242",
+    borderRadius: 16,
+    border: "2px solid #616161",
+    padding: 4,
+  },
   companyName: {
     fontSize: 20,
     fontWeight: "bold",
     color: "#b12025",
+    marginLeft: 8,
+  },
+  companySubtitle: {
+    fontSize: 8,
+    color: "#6b7280",
+    marginLeft: 8,
+    marginTop: 1,
   },
   reportInfo: {
-    textAlign: "right",
+    textAlign: "center",
+    flex: 1,
   },
   reportTitle: {
     fontSize: 22,
     fontWeight: "bold",
     color: "#1f2937",
     textAlign: "center",
-    marginBottom: 5,
+    marginBottom: 6,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
   },
   reportSubtitle: {
     fontSize: 12,
     color: "#6b7280",
     textAlign: "center",
-    marginBottom: 5,
+    marginBottom: 6,
+    fontWeight: "500",
+  },
+  reportDate: {
+    fontSize: 8,
+    color: "#6b7280",
+    textAlign: "center",
+    marginTop: 3,
+    fontStyle: "italic",
   },
   section: {
-    marginBottom: 15,
+    marginBottom: 12,
+    backgroundColor: "#ffffff",
+    padding: 10,
+    borderRadius: 6,
+    border: "1px solid #e5e7eb",
+    shadow: "0 1px 3px rgba(0,0,0,0.1)",
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "bold",
     color: "#1f2937",
-    marginBottom: 10,
-    borderBottom: "1px solid #e5e7eb",
-    paddingBottom: 5,
+    marginBottom: 8,
+    borderBottom: "2px solid #b12025",
+    paddingBottom: 4,
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
   },
   summaryGrid: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 15,
+    marginBottom: 10,
+    gap: 6,
   },
   summaryCard: {
-    width: "23%",
+    flex: 1,
     padding: 8,
     backgroundColor: "#f9fafb",
     borderRadius: 6,
-    border: "1px solid #e5e7eb",
+    border: "2px solid #e5e7eb",
+    alignItems: "center",
   },
   summaryLabel: {
-    fontSize: 9,
+    fontSize: 8,
     color: "#6b7280",
     marginBottom: 2,
+    fontWeight: "500",
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
   },
   summaryValue: {
     fontSize: 14,
     fontWeight: "bold",
-    color: "#1f2937",
+    color: "#b12025",
   },
   chartContainer: {
-    marginBottom: 15,
+    marginBottom: 10,
     alignItems: "center",
-    padding: 15,
+    padding: 12,
     backgroundColor: "#f9fafb",
     borderRadius: 6,
-    border: "1px solid #e5e7eb",
+    border: "2px solid #e5e7eb",
   },
   chartImage: {
     width: 450,
@@ -122,25 +177,30 @@ const styles = StyleSheet.create({
   },
   table: {
     width: "100%",
-    border: "1px solid #e5e7eb",
-    marginBottom: 15,
+    border: "2px solid #e5e7eb",
+    marginBottom: 10,
+    borderRadius: 6,
+    overflow: "hidden",
   },
   tableHeader: {
-    backgroundColor: "#f3f4f6",
+    backgroundColor: "#b12025",
     flexDirection: "row",
-    borderBottom: "1px solid #e5e7eb",
+    borderBottom: "2px solid #e5e7eb",
   },
   tableHeaderCell: {
     flex: 1,
     padding: 6,
-    fontSize: 9,
+    fontSize: 8,
     fontWeight: "bold",
-    color: "#374151",
+    color: "#ffffff",
     textAlign: "center",
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
   },
   tableRow: {
     flexDirection: "row",
     borderBottom: "1px solid #e5e7eb",
+    backgroundColor: "#ffffff",
   },
   tableRowAlt: {
     flexDirection: "row",
@@ -150,47 +210,55 @@ const styles = StyleSheet.create({
   tableCell: {
     flex: 1,
     padding: 4,
-    fontSize: 8,
+    fontSize: 7,
     color: "#374151",
     textAlign: "center",
   },
   statusBadge: {
-    padding: "2px 6px",
+    padding: "2px 4px",
     borderRadius: 3,
-    fontSize: 8,
+    fontSize: 6,
     fontWeight: "bold",
     textAlign: "center",
   },
   statusLow: {
     backgroundColor: "#fef2f2",
     color: "#dc2626",
+    border: "1px solid #fecaca",
   },
   statusModerate: {
     backgroundColor: "#fffbeb",
     color: "#d97706",
+    border: "1px solid #fed7aa",
   },
   statusHigh: {
     backgroundColor: "#f0fdf4",
     color: "#16a34a",
+    border: "1px solid #bbf7d0",
   },
   footer: {
     position: "absolute",
-    bottom: 20,
-    left: 25,
-    right: 25,
-    borderTop: "1px solid #e5e7eb",
-    paddingTop: 10,
+    bottom: 15,
+    left: 20,
+    right: 20,
+    borderTop: "2px solid #b12025",
+    paddingTop: 8,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    backgroundColor: "#f5f5dc",
+    padding: 6,
+    borderRadius: 6,
   },
   footerText: {
-    fontSize: 8,
+    fontSize: 7,
     color: "#6b7280",
+    fontWeight: "500",
   },
   pageNumber: {
-    fontSize: 8,
-    color: "#6b7280",
+    fontSize: 7,
+    color: "#b12025",
+    fontWeight: "bold",
   },
 })
 
@@ -211,21 +279,27 @@ export default function LowStockReport() {
   const [chartVisible, setChartVisible] = useState(false)
   const chartRef = useRef<HTMLDivElement>(null)
   const [chartImage, setChartImage] = useState<string | null>(null)
+  // Get current date for sensible defaults
+  const now = new Date()
+  const currentMonth = now.getMonth()
+  const currentYear = now.getFullYear()
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate()
+  
   const [formData, setFormData] = useState({
     startDate: {
       day: "01",
-      month: "03",
-      year: "2025",
+      month: String(currentMonth + 1).padStart(2, '0'),
+      year: String(currentYear),
     },
     endDate: {
-      day: "31",
-      month: "03",
-      year: "2025",
+      day: String(daysInMonth),
+      month: String(currentMonth + 1).padStart(2, '0'),
+      year: String(currentYear),
     },
   })
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: new Date(2025, 2, 1),
-    to: new Date(2025, 2, 31),
+    from: new Date(currentYear, currentMonth, 1),
+    to: new Date(currentYear, currentMonth, daysInMonth),
   })
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
@@ -237,21 +311,13 @@ export default function LowStockReport() {
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.companyInfo}>
-              <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <View style={{
-                  width: 30,
-                  height: 30,
-                  backgroundColor: "#b12025",
-                  borderRadius: 6,
-                  marginRight: 10,
-                  alignItems: "center",
-                  justifyContent: "center"
-                }}>
-                  <Text style={{ color: "white", fontSize: 14, fontWeight: "bold" }}>O</Text>
+              <View style={styles.logoSection}>
+                <View style={styles.ustLogo}>
+                  <Image src="/ust-logo.png" style={{ width: "100%", height: "100%" }} />
                 </View>
                 <View>
                   <Text style={styles.companyName}>OSSMS</Text>
-                  <Text style={{ fontSize: 8, color: "#6b7280" }}>Office Supplies Stock Monitoring System</Text>
+                  <Text style={styles.companySubtitle}>Office Supplies Stock Monitoring System</Text>
                 </View>
               </View>
               <View style={styles.reportInfo}>
@@ -259,32 +325,37 @@ export default function LowStockReport() {
                 <Text style={styles.reportSubtitle}>
                   {formData.startDate.day}/{formData.startDate.month}/{formData.startDate.year} - {formData.endDate.day}/{formData.endDate.month}/{formData.endDate.year}
                 </Text>
-                <Text style={{ fontSize: 8, color: "#6b7280", textAlign: "center", marginTop: 3 }}>
+                <Text style={styles.reportDate}>
                   Generated on {new Date().toLocaleDateString()} at {new Date().toLocaleTimeString()}
                 </Text>
+              </View>
+              <View style={styles.logoSection}>
+                <View style={styles.cicsLogo}>
+                  <Image src="/ciscs-logo.png" style={{ width: "100%", height: "100%" }} />
+                </View>
               </View>
             </View>
           </View>
 
           {/* Summary Section */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Summary</Text>
+            <Text style={styles.sectionTitle}>Low Stock Summary</Text>
             <View style={styles.summaryGrid}>
-              <View style={styles.summaryCard}>
-                <Text style={styles.summaryLabel}>Total Items</Text>
-                <Text style={styles.summaryValue}>{data?.supplies?.length || 0}</Text>
-              </View>
               <View style={styles.summaryCard}>
                 <Text style={styles.summaryLabel}>Low Stock Items</Text>
                 <Text style={styles.summaryValue}>{data?.supplies?.filter((item: any) => item.status === "Low").length || 0}</Text>
               </View>
               <View style={styles.summaryCard}>
-                <Text style={styles.summaryLabel}>Moderate Stock Items</Text>
-                <Text style={styles.summaryValue}>{data?.supplies?.filter((item: any) => item.status === "Moderate").length || 0}</Text>
+                <Text style={styles.summaryLabel}>Total Low Stock Quantity</Text>
+                <Text style={styles.summaryValue}>{data?.supplies?.filter((item: any) => item.status === "Low").reduce((sum: number, item: any) => sum + (item.quantity || 0), 0) || 0}</Text>
               </View>
               <View style={styles.summaryCard}>
-                <Text style={styles.summaryLabel}>High Stock Items</Text>
-                <Text style={styles.summaryValue}>{data?.supplies?.filter((item: any) => item.status === "High").length || 0}</Text>
+                <Text style={styles.summaryLabel}>Categories Affected</Text>
+                <Text style={styles.summaryValue}>{new Set(data?.supplies?.filter((item: any) => item.status === "Low").map((item: any) => item.category)).size || 0}</Text>
+              </View>
+              <View style={styles.summaryCard}>
+                <Text style={styles.summaryLabel}>Suppliers Affected</Text>
+                <Text style={styles.summaryValue}>{new Set(data?.supplies?.filter((item: any) => item.status === "Low").map((item: any) => item.supplier_name).filter(Boolean)).size || 0}</Text>
               </View>
             </View>
           </View>
@@ -307,26 +378,25 @@ export default function LowStockReport() {
                 <View style={styles.tableHeader}>
                   <Text style={styles.tableHeaderCell}>Item Name</Text>
                   <Text style={styles.tableHeaderCell}>Category</Text>
-                  <Text style={styles.tableHeaderCell}>Pieces</Text>
-                  <Text style={styles.tableHeaderCell}>Status</Text>
+                  <Text style={styles.tableHeaderCell}>Subcategory</Text>
+                  <Text style={styles.tableHeaderCell}>Variation</Text>
+                  <Text style={styles.tableHeaderCell}>Brand</Text>
+                  <Text style={styles.tableHeaderCell}>Quantity</Text>
+                  <Text style={styles.tableHeaderCell}>Unit</Text>
                   <Text style={styles.tableHeaderCell}>Supplier</Text>
                   <Text style={styles.tableHeaderCell}>Last Updated</Text>
                 </View>
-                {data.supplies.map((item: any, index: number) => (
+                {data.supplies
+                  .filter((item: any) => item.status === "Low")
+                  .map((item: any, index: number) => (
                   <View key={index} style={index % 2 === 0 ? styles.tableRow : styles.tableRowAlt}>
                     <Text style={styles.tableCell}>{item.name}</Text>
                     <Text style={styles.tableCell}>{item.category || "N/A"}</Text>
-                    <Text style={styles.tableCell}>{item.pieces}</Text>
-                    <Text style={styles.tableCell}>
-                      <Text style={[
-                        styles.statusBadge, 
-                        item.status === "Low" ? styles.statusLow : 
-                        item.status === "Moderate" ? styles.statusModerate : 
-                        styles.statusHigh
-                      ]}>
-                        {item.status}
-                      </Text>
-                    </Text>
+                    <Text style={styles.tableCell}>{item.subcategory || "N/A"}</Text>
+                    <Text style={styles.tableCell}>{item.variation || "N/A"}</Text>
+                    <Text style={styles.tableCell}>{item.brand || "N/A"}</Text>
+                    <Text style={styles.tableCell}>{item.quantity || item.pieces || 0}</Text>
+                    <Text style={styles.tableCell}>{item.unit || "N/A"}</Text>
                     <Text style={styles.tableCell}>{item.supplier_name || "N/A"}</Text>
                     <Text style={styles.tableCell}>{new Date(item.updated_at).toLocaleDateString()}</Text>
                   </View>
@@ -369,61 +439,18 @@ export default function LowStockReport() {
   }
 
   const generateReport = async () => {
-    setIsLoading(true)
-    try {
-      const isValidDate = (d: any) => d && d.year.length === 4 && d.month.length === 2 && d.day.length === 2;
-      
-      if (!isValidDate(formData.startDate) || !isValidDate(formData.endDate)) {
-        toast({
-          title: "Invalid date format",
-          description: "Please ensure all date fields are properly filled.",
-          variant: "destructive",
-        })
-        return
-      }
-
-      const startDate = `${formData.startDate.year}-${formData.startDate.month}-${formData.startDate.day}`
-      const endDate = `${formData.endDate.year}-${formData.endDate.month}-${formData.endDate.day}`
-
-      const response = await tauriApiService.getLowStockReport()
-      
-      if (response && Array.isArray(response)) {
-        setData({ supplies: response })
-        
-        // Prepare chart data
-        const chartData = response.map((item: any) => ({
-          name: item.name,
-          pieces: item.pieces,
-          status: item.status,
-        }))
-        setChartData(chartData)
-        setChartVisible(true)
-        
-        // Auto-capture chart for PDF
-        setTimeout(() => {
-          handleCaptureChart()
-        }, 1500)
-        
-        toast({
-          title: "Report generated",
-          description: "Low stock report has been generated successfully.",
-        })
-      } else {
-        toast({
-          title: "Error generating report",
-          description: "Failed to generate the low stock report.",
-          variant: "destructive",
-        })
-      }
-    } catch (error) {
-      toast({
-        title: "Error generating report",
-        description: "An unexpected error occurred while generating the report.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoading(false)
-    }
+    // Use the same logic as get_data() for consistency
+    await get_data()
+    
+    // Auto-capture chart for PDF after a delay
+    setTimeout(() => {
+      handleCaptureChart()
+    }, 1500)
+    
+    toast({
+      title: "Report generated",
+      description: "Low stock report has been generated successfully.",
+    })
   }
 
   const get_data = async () => {
@@ -442,19 +469,34 @@ export default function LowStockReport() {
       const startDate = `${formData.startDate.year}-${formData.startDate.month}-${formData.startDate.day}`
       const endDate = `${formData.endDate.year}-${formData.endDate.month}-${formData.endDate.day}`
 
-      const response = await tauriApiService.getLowStockReport()
+      // Get all supplies and recalculate their status
+      const allSupplies = await tauriApiService.getSupplies()
       
-      if (response && Array.isArray(response)) {
-        setData({ supplies: response })
+      if (allSupplies && Array.isArray(allSupplies)) {
+        // Recalculate status for all items using the new logic
+        const suppliesWithRecalculatedStatus = allSupplies.map((supply: any) => {
+          const stockStatus = calculateStockStatus(supply.quantity, supply.min_quantity)
+          return {
+            ...supply,
+            status: stockStatus.status
+          }
+        })
         
-        // Prepare chart data
-        const chartData = response.map((item: any) => ({
+        setData({ supplies: suppliesWithRecalculatedStatus })
+        
+        // Prepare chart data - show only low stock items after report generation
+        const lowStockItems = suppliesWithRecalculatedStatus.filter((item: any) => item.status === "Low")
+        const chartData = lowStockItems.map((item: any) => ({
           name: item.name,
-          pieces: item.pieces,
+          pieces: (item.quantity || 0) === 0 ? 1 : item.quantity, // Use 1 for zero to show a small bar
           status: item.status,
+          // Add a visual indicator for zero quantity items
+          isZero: (item.quantity || 0) === 0
         }))
+        
+
         setChartData(chartData)
-        setChartVisible(true)
+        setChartVisible(chartData.length > 0) // Show chart if there are any items
       } else {
         toast({
           title: "Error fetching data",
@@ -719,21 +761,34 @@ export default function LowStockReport() {
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900 flex items-center">
               <BarChart3 className="h-5 w-5 mr-2 text-blue-600" />
-              Stock Level Visualization
+              Low Stock Items Visualization
             </h3>
           </div>
           <div ref={chartRef} className="w-full h-96">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
+            <ResponsiveContainer width="100%" height={400}>
+              <BarChart data={chartData} key={chartData.length}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis />
                 <Tooltip />
-                <Legend />
                 <Bar dataKey="pieces" fill="#b12025" />
               </BarChart>
             </ResponsiveContainer>
           </div>
+          
+                    {/* Legend for chart colors */}
+          <div className="mt-4 flex flex-wrap gap-4 text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-red-500 rounded"></div>
+              <span>Zero Stock (Critical)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-yellow-500 rounded"></div>
+              <span>Low Stock</span>
+            </div>
+          </div>
+          
+          
         </div>
       )}
 
@@ -757,7 +812,9 @@ export default function LowStockReport() {
                 </tr>
               </thead>
               <tbody>
-                {data.supplies.map((item: any, index: number) => (
+                {data.supplies
+                  .filter((item: any) => item.status === "Low")
+                  .map((item: any, index: number) => (
                   <tr key={index} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
                     <td className="p-4">
                       <div className="font-medium text-gray-900">{item.name}</div>
@@ -766,7 +823,7 @@ export default function LowStockReport() {
                       {item.category || "N/A"}
                     </td>
                     <td className="p-4 font-medium">
-                      {item.pieces}
+                      {item.quantity}
                     </td>
                     <td className="p-4">
                       <span
@@ -794,6 +851,8 @@ export default function LowStockReport() {
           </div>
         </div>
       )}
+      
+
     </div>
   )
 }
