@@ -54,13 +54,16 @@ const styles = StyleSheet.create({
   page: {
     flexDirection: "column",
     backgroundColor: "#ffffff",
-    padding: 25,
+    padding: 20,
     fontFamily: "Helvetica",
   },
   header: {
-    borderBottom: "1px solid #b12025",
+    borderBottom: "2px solid #b12025",
     paddingBottom: 15,
-    marginBottom: 20,
+    marginBottom: 15,
+    backgroundColor: "#f5f5dc",
+    padding: 12,
+    borderRadius: 6,
   },
   companyInfo: {
     flexDirection: "row",
@@ -68,67 +71,118 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 10,
   },
+  logoSection: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  ustLogo: {
+    width: 32,
+    height: 32,
+    backgroundColor: "#e3f2fd",
+    borderRadius: 16,
+    border: "2px solid #2196f3",
+    padding: 4,
+  },
+  cicsLogo: {
+    width: 32,
+    height: 32,
+    backgroundColor: "#424242",
+    borderRadius: 16,
+    border: "2px solid #616161",
+    padding: 4,
+  },
   companyName: {
     fontSize: 20,
     fontWeight: "bold",
     color: "#b12025",
+    marginLeft: 8,
+  },
+  companySubtitle: {
+    fontSize: 8,
+    color: "#6b7280",
+    marginLeft: 8,
+    marginTop: 1,
   },
   reportInfo: {
-    textAlign: "right",
+    textAlign: "center",
+    flex: 1,
   },
   reportTitle: {
     fontSize: 22,
     fontWeight: "bold",
     color: "#1f2937",
     textAlign: "center",
-    marginBottom: 5,
+    marginBottom: 6,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
   },
   reportSubtitle: {
     fontSize: 12,
     color: "#6b7280",
     textAlign: "center",
-    marginBottom: 5,
+    marginBottom: 6,
+    fontWeight: "500",
+  },
+  reportDate: {
+    fontSize: 8,
+    color: "#6b7280",
+    textAlign: "center",
+    marginTop: 3,
+    fontStyle: "italic",
   },
   section: {
-    marginBottom: 15,
+    marginBottom: 12,
+    backgroundColor: "#ffffff",
+    padding: 10,
+    borderRadius: 6,
+    border: "1px solid #e5e7eb",
+    shadow: "0 1px 3px rgba(0,0,0,0.1)",
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "bold",
     color: "#1f2937",
-    marginBottom: 10,
-    borderBottom: "1px solid #e5e7eb",
-    paddingBottom: 5,
+    marginBottom: 8,
+    borderBottom: "2px solid #b12025",
+    paddingBottom: 4,
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
   },
   summaryGrid: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 15,
+    marginBottom: 10,
+    gap: 6,
   },
   summaryCard: {
-    width: "22%",
+    flex: 1,
     padding: 8,
     backgroundColor: "#f9fafb",
     borderRadius: 6,
-    border: "1px solid #e5e7eb",
+    border: "2px solid #e5e7eb",
+    alignItems: "center",
   },
   summaryLabel: {
-    fontSize: 9,
+    fontSize: 8,
     color: "#6b7280",
     marginBottom: 2,
+    fontWeight: "500",
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
   },
   summaryValue: {
     fontSize: 14,
     fontWeight: "bold",
-    color: "#1f2937",
+    color: "#b12025",
   },
   chartContainer: {
-    marginBottom: 15,
+    marginBottom: 10,
     alignItems: "center",
-    padding: 15,
+    padding: 12,
     backgroundColor: "#f9fafb",
     borderRadius: 6,
-    border: "1px solid #e5e7eb",
+    border: "2px solid #e5e7eb",
   },
   chartImage: {
     width: 450,
@@ -137,25 +191,30 @@ const styles = StyleSheet.create({
   },
   table: {
     width: "100%",
-    border: "1px solid #e5e7eb",
-    marginBottom: 15,
+    border: "2px solid #e5e7eb",
+    marginBottom: 10,
+    borderRadius: 6,
+    overflow: "hidden",
   },
   tableHeader: {
-    backgroundColor: "#f3f4f6",
+    backgroundColor: "#b12025",
     flexDirection: "row",
-    borderBottom: "1px solid #e5e7eb",
+    borderBottom: "2px solid #e5e7eb",
   },
   tableHeaderCell: {
     flex: 1,
     padding: 6,
-    fontSize: 9,
+    fontSize: 8,
     fontWeight: "bold",
-    color: "#374151",
+    color: "#ffffff",
     textAlign: "center",
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
   },
   tableRow: {
     flexDirection: "row",
     borderBottom: "1px solid #e5e7eb",
+    backgroundColor: "#ffffff",
   },
   tableRowAlt: {
     flexDirection: "row",
@@ -165,28 +224,33 @@ const styles = StyleSheet.create({
   tableCell: {
     flex: 1,
     padding: 4,
-    fontSize: 8,
+    fontSize: 7,
     color: "#374151",
     textAlign: "center",
   },
   footer: {
     position: "absolute",
-    bottom: 20,
-    left: 25,
-    right: 25,
-    borderTop: "1px solid #e5e7eb",
-    paddingTop: 10,
+    bottom: 15,
+    left: 20,
+    right: 20,
+    borderTop: "2px solid #b12025",
+    paddingTop: 8,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    backgroundColor: "#f5f5dc",
+    padding: 6,
+    borderRadius: 6,
   },
   footerText: {
-    fontSize: 8,
+    fontSize: 7,
     color: "#6b7280",
+    fontWeight: "500",
   },
   pageNumber: {
-    fontSize: 8,
-    color: "#6b7280",
+    fontSize: 7,
+    color: "#b12025",
+    fontWeight: "bold",
   },
 })
 
@@ -205,6 +269,12 @@ interface ChartData {
 }
 
 export default function StockMovementReport() {
+  // Get current date for sensible defaults
+  const now = new Date()
+  const currentMonth = now.getMonth()
+  const currentYear = now.getFullYear()
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate()
+  
   const [data, setData] = useState<ChartData[]>([])
   const [chartData, setChartData] = useState<ChartData[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -212,8 +282,8 @@ export default function StockMovementReport() {
   const [selectedItem, setSelectedItem] = useState("all")
   const [items, setItems] = useState<string[]>([])
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-    to: new Date(),
+    from: new Date(currentYear, currentMonth, 1),
+    to: new Date(currentYear, currentMonth, daysInMonth),
   })
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [exportFormat, setExportFormat] = useState<"excel" | "pdf">("excel")
@@ -242,21 +312,13 @@ export default function StockMovementReport() {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.companyInfo}>
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <View style={{
-                width: 30,
-                height: 30,
-                backgroundColor: "#b12025",
-                borderRadius: 6,
-                marginRight: 10,
-                alignItems: "center",
-                justifyContent: "center"
-              }}>
-                <Text style={{ color: "white", fontSize: 14, fontWeight: "bold" }}>O</Text>
+            <View style={styles.logoSection}>
+              <View style={styles.ustLogo}>
+                <Image src="/ust-logo.png" style={{ width: "100%", height: "100%" }} />
               </View>
               <View>
                 <Text style={styles.companyName}>OSSMS</Text>
-                <Text style={{ fontSize: 8, color: "#6b7280" }}>Office Supplies Stock Monitoring System</Text>
+                <Text style={styles.companySubtitle}>Office Supplies Stock Monitoring System</Text>
               </View>
             </View>
             <View style={styles.reportInfo}>
@@ -264,16 +326,21 @@ export default function StockMovementReport() {
               <Text style={styles.reportSubtitle}>
                 {dateRange?.from ? formatDate(dateRange.from) : 'Not selected'} - {dateRange?.to ? formatDate(dateRange.to) : 'Not selected'}
               </Text>
-              <Text style={{ fontSize: 8, color: "#6b7280", textAlign: "center", marginTop: 3 }}>
+              <Text style={styles.reportDate}>
                 Generated on {new Date().toLocaleDateString()} at {new Date().toLocaleTimeString()}
               </Text>
+            </View>
+            <View style={styles.logoSection}>
+              <View style={styles.cicsLogo}>
+                <Image src="/ciscs-logo.png" style={{ width: "100%", height: "100%" }} />
+              </View>
             </View>
           </View>
         </View>
 
         {/* Summary Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Summary</Text>
+          <Text style={styles.sectionTitle}>Movement Summary</Text>
           <View style={styles.summaryGrid}>
             <View style={styles.summaryCard}>
               <Text style={styles.summaryLabel}>Total Stock In</Text>
@@ -288,8 +355,8 @@ export default function StockMovementReport() {
               <Text style={styles.summaryValue}>{summaryStats.netChange >= 0 ? "+" : ""}{summaryStats.netChange}</Text>
             </View>
             <View style={styles.summaryCard}>
-              <Text style={styles.summaryLabel}>Days Tracked</Text>
-              <Text style={styles.summaryValue}>{summaryStats.totalDays}</Text>
+              <Text style={styles.summaryLabel}>Average Daily Movement</Text>
+              <Text style={styles.summaryValue}>{summaryStats.totalDays > 0 ? Math.round((summaryStats.totalStockIn + summaryStats.totalStockOut) / summaryStats.totalDays) : 0}</Text>
             </View>
           </View>
         </View>
@@ -307,22 +374,28 @@ export default function StockMovementReport() {
         {/* Table Section */}
         {data && data.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Stock Movement Details</Text>
+            <Text style={styles.sectionTitle}>Daily Movement Details</Text>
             <View style={styles.table}>
               <View style={styles.tableHeader}>
                 <Text style={styles.tableHeaderCell}>Date</Text>
                 <Text style={styles.tableHeaderCell}>Stock In</Text>
                 <Text style={styles.tableHeaderCell}>Stock Out</Text>
                 <Text style={styles.tableHeaderCell}>Net Change</Text>
+                <Text style={styles.tableHeaderCell}>Cumulative</Text>
               </View>
-              {data.map((item: any, index: number) => (
-                <View key={index} style={index % 2 === 0 ? styles.tableRow : styles.tableRowAlt}>
-                  <Text style={styles.tableCell}>{item.date}</Text>
-                  <Text style={styles.tableCell}>{item.stock_in}</Text>
-                  <Text style={styles.tableCell}>{item.stock_out}</Text>
-                  <Text style={styles.tableCell}>{item.stock_in - item.stock_out >= 0 ? "+" : ""}{item.stock_in - item.stock_out}</Text>
-                </View>
-              ))}
+              {data.map((item: any, index: number) => {
+                const netChange = item.stock_in - item.stock_out
+                const cumulative = data.slice(0, index + 1).reduce((sum: number, day: any) => sum + (day.stock_in - day.stock_out), 0)
+                return (
+                  <View key={index} style={index % 2 === 0 ? styles.tableRow : styles.tableRowAlt}>
+                    <Text style={styles.tableCell}>{item.date}</Text>
+                    <Text style={styles.tableCell}>{item.stock_in}</Text>
+                    <Text style={styles.tableCell}>{item.stock_out}</Text>
+                    <Text style={styles.tableCell}>{netChange >= 0 ? "+" : ""}{netChange}</Text>
+                    <Text style={styles.tableCell}>{cumulative >= 0 ? "+" : ""}{cumulative}</Text>
+                  </View>
+                )
+              })}
             </View>
           </View>
         )}
