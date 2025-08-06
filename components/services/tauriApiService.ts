@@ -7,7 +7,7 @@ const isTauriAvailable = typeof window !== 'undefined' && (
   typeof (window as any).__TAURI_RUNTIME__ !== 'undefined'
 );
 
-console.log('TauriApiService: isTauriAvailable =', isTauriAvailable);
+
 
 // Types for Tauri API
 interface User {
@@ -146,7 +146,6 @@ class TauriApiService {
   private initializationPromise: Promise<void> | null = null;
 
   constructor() {
-    console.log('TauriApiService: Constructor called');
     // Initialize invoke function asynchronously
     this.initializationPromise = this.initializeInvokeAsync();
   }
@@ -159,7 +158,6 @@ class TauriApiService {
       
       // Check if we're in a Tauri environment
       if (typeof window === 'undefined') {
-        console.log('TauriApiService: Not in browser environment');
         return;
       }
 
@@ -177,7 +175,6 @@ class TauriApiService {
       for (const tauriObj of possibleTauriObjects) {
         if (tauriObj && typeof tauriObj.invoke === 'function') {
           realInvoke = tauriObj.invoke;
-          console.log('TauriApiService: Found invoke in Tauri object');
           break;
         }
       }
@@ -185,25 +182,20 @@ class TauriApiService {
       // If no real invoke found, try global invoke
       if (!realInvoke && typeof (window as any).invoke === 'function') {
         realInvoke = (window as any).invoke;
-        console.log('TauriApiService: Found global invoke function');
       }
 
       // Use real invoke if available, otherwise use mock
       if (realInvoke) {
         this.invoke = realInvoke;
         this.invokeLoaded = true;
-        console.log('TauriApiService: Real invoke function loaded successfully');
       } else {
         // Create a mock invoke function for build time
         this.invoke = async (command: string, args?: any) => {
-          console.warn(`TauriApiService: Mock invoke called with command: ${command}`);
           throw new Error('Tauri invoke not available - running in mock mode');
         };
         this.invokeLoaded = false;
-        console.warn('TauriApiService: Using mock invoke function (not in Tauri environment)');
       }
     } catch (error) {
-      console.error('TauriApiService: Error initializing invoke:', error);
       this.invokeLoaded = false;
     }
   }
@@ -217,13 +209,10 @@ class TauriApiService {
 
   // Authentication
   async login(username: string, password: string): Promise<LoginResponse> {
-    console.log('TauriApiService.login called with:', { username, password });
-    
     // Wait for initialization to complete
     await this.waitForInitialization();
     
     if (!this.invoke) {
-      console.error('TauriApiService: invoke function not available');
       return {
         success: false,
         error: 'Tauri environment not available'
@@ -231,14 +220,11 @@ class TauriApiService {
     }
     
     try {
-      console.log('TauriApiService: invoking login command...');
       const response = await this.invoke('login', {
         request: { username, password }
       }) as LoginResponse;
-      console.log('TauriApiService: login response received:', response);
       return response;
     } catch (error) {
-      console.error('TauriApiService: Login error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Login failed'
@@ -263,11 +249,9 @@ class TauriApiService {
       } else if (response && Array.isArray(response.data)) {
         return response.data as User[];
       } else {
-        console.error('Unexpected response format:', response);
         throw new Error('Invalid response format from server');
       }
     } catch (error) {
-      console.error('Get users error:', error);
       throw error;
     }
   }
@@ -282,7 +266,6 @@ class TauriApiService {
         request: userData
       }) as string;
     } catch (error) {
-      console.error('Create user error:', error);
       throw error;
     }
   }
@@ -300,7 +283,6 @@ class TauriApiService {
         }
       }) as string;
     } catch (error) {
-      console.error('Update user error:', error);
       throw error;
     }
   }
@@ -315,7 +297,6 @@ class TauriApiService {
         request: { id: userId }
       }) as string;
     } catch (error) {
-      console.error('Delete user error:', error);
       throw error;
     }
   }
@@ -331,7 +312,6 @@ class TauriApiService {
       }
       return await this.invoke('get_supplies') as Supply[];
     } catch (error) {
-      console.error('Get supplies error:', error);
       throw error;
     }
   }
@@ -352,7 +332,6 @@ class TauriApiService {
       
       return result;
     } catch (error) {
-      console.error('Create supply error:', error);
       throw error;
     }
   }
@@ -376,7 +355,6 @@ class TauriApiService {
       
       return result;
     } catch (error) {
-      console.error('Update supply error:', error);
       throw error;
     }
   }
@@ -389,7 +367,6 @@ class TauriApiService {
       }
       return await this.invoke('delete_supply', { supply_id: supplyId }) as string;
     } catch (error) {
-      console.error('Delete supply error:', error);
       throw error;
     }
   }
@@ -402,7 +379,6 @@ class TauriApiService {
       }
       return await this.invoke('delete_supply_history', { history_id: historyId }) as string;
     } catch (error) {
-      console.error('Delete supply history error:', error);
       throw error;
     }
   }
@@ -416,7 +392,6 @@ class TauriApiService {
       }
       return await this.invoke('get_supply_histories') as EnrichedSupplyHistory[];
     } catch (error) {
-      console.error('Get supply histories error:', error);
       throw error;
     }
   }
@@ -432,7 +407,6 @@ class TauriApiService {
         request: { email }
       }) as { success: boolean; error?: string };
     } catch (error) {
-      console.error('Forgot password error:', error);
       return { success: false, error: 'Failed to send reset email' };
     }
   }
@@ -447,7 +421,6 @@ class TauriApiService {
         request: { email, token, password }
       }) as { success: boolean; error?: string };
     } catch (error) {
-      console.error('Reset password error:', error);
       return { success: false, error: 'Failed to reset password' };
     }
   }
@@ -457,9 +430,13 @@ class TauriApiService {
     try {
       await this.waitForInitialization();
       const supplies = await this.getSupplies();
-      return supplies.filter(supply => supply.quantity <= supply.min_quantity);
+      
+      // Use the new stock status calculation to filter low stock items
+      return supplies.filter(supply => {
+        const stockStatus = this.calculateStockStatus(supply.quantity, supply.min_quantity);
+        return stockStatus.status === 'Low';
+      });
     } catch (error) {
-      console.error('Get low stock report error:', error);
       throw error;
     }
   }
@@ -470,7 +447,6 @@ class TauriApiService {
       // For now, return all supply histories since we don't have filtering implemented
       return await this.getSupplyHistories();
     } catch (error) {
-      console.error('Get stock movement report error:', error);
       throw error;
     }
   }
@@ -505,6 +481,31 @@ class TauriApiService {
     }
   }
 
+  async recalculateStockStatus(): Promise<string> {
+    try {
+      await this.waitForInitialization();
+      if (!this.invoke) {
+        throw new Error('Tauri invoke function not available');
+      }
+      return await this.invoke('recalculate_stock_status') as string;
+    } catch (error) {
+      throw new Error('Failed to recalculate stock status');
+    }
+  }
+
+  // Calculate stock status using the same logic as the frontend
+  private calculateStockStatus(quantity: number, minQuantity: number = 10): { status: 'Low' | 'Moderate' | 'High' } {
+    const moderateThreshold = Math.floor(minQuantity * 1.5);
+    
+    if (quantity <= minQuantity) {
+      return { status: 'Low' };
+    } else if (quantity <= moderateThreshold) {
+      return { status: 'Moderate' };
+    } else {
+      return { status: 'High' };
+    }
+  }
+
   async checkDatabaseStatus(): Promise<{ status: string; message?: string }> {
     try {
       await this.waitForInitialization();
@@ -515,7 +516,6 @@ class TauriApiService {
       await this.invoke('get_users');
       return { status: 'connected' };
     } catch (error) {
-      console.error('Database status check failed:', error);
       return { 
         status: 'error', 
         message: error instanceof Error ? error.message : 'Unknown database error' 
