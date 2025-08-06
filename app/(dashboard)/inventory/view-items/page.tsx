@@ -1073,8 +1073,9 @@ export default function ViewItemsPage() {
       {/* Dialogs */}
       {showUpdateDialog && selectedItem && (
         <UpdateItemDialog
+          open={showUpdateDialog}
+          onOpenChange={setShowUpdateDialog}
           item={selectedItem}
-          onClose={() => setShowUpdateDialog(false)}
           onSuccess={handleUpdateSuccess}
         />
       )}
