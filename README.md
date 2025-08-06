@@ -5,13 +5,13 @@ A modern, cross-platform desktop application for managing office supplies and in
 ## 🚀 Features
 
 - **User Management**: Secure authentication and role-based access control (Admin, Staff, Viewer)
-- **Inventory Management**: Track supplies, quantities, and locations
-- **Stock Movement**: Monitor stock in/out with detailed history
-- **Reporting**: Generate low-stock alerts and movement reports
+- **Inventory Management**: Track supplies, quantities, and locations with intelligent stock status calculation
+- **Stock Movement**: Monitor stock in/out with detailed history and user attribution
+- **Advanced Reporting**: Generate low-stock alerts and movement reports with modern PDF exports
 - **Email Notifications**: Password reset functionality with SMTP support
 - **Cross-Platform**: Works on Windows, macOS, and Linux
 - **Offline-First**: Local SQLite database for reliable operation
-- **Modern UI**: Beautiful, responsive interface built with Tailwind CSS
+- **Modern UI**: Beautiful, responsive interface built with Tailwind CSS and shadcn/ui
 
 ## 📋 Prerequisites
 
@@ -112,18 +112,26 @@ cargo build --release
 ossms/
 ├── app/                    # Next.js app directory
 │   ├── (dashboard)/       # Dashboard routes
+│   │   ├── dashboard/     # Main dashboard
+│   │   ├── inventory/     # Inventory management
+│   │   ├── item-history/  # Stock movement history
+│   │   ├── reports/       # Reporting system
+│   │   └── users/         # User management
 │   ├── globals.css        # Global styles
 │   └── layout.tsx         # Root layout
 ├── components/            # React components
 │   ├── ui/               # UI components (shadcn/ui)
 │   └── services/         # API services
 ├── lib/                  # Utility functions
+│   ├── utils.ts          # Stock status calculation
+│   ├── permissions.ts    # Role-based access control
+│   └── actions.ts        # API actions
 ├── src-tauri/           # Rust backend
 │   ├── src/             # Rust source code
 │   ├── Cargo.toml       # Rust dependencies
 │   └── tauri.conf.json  # Tauri configuration
 ├── public/              # Static assets
-└── styles/              # Additional styles
+└── hooks/               # Custom React hooks
 ```
 
 ## 🔧 Configuration
@@ -237,6 +245,10 @@ rm ~/.local/share/.ossms/ossms.db
 - `GET /api/history` - Get supply history
 - `DELETE /api/history/:id` - Delete history record
 
+### Reports
+- `GET /api/reports/low-stock` - Get low stock report
+- `GET /api/reports/stock-movement` - Get stock movement report
+
 ## 🤝 Contributing
 
 1. Fork the repository
@@ -269,11 +281,13 @@ This software includes logos from the University of Santo Tomas and the College 
 ## 🗺️ Roadmap
 
 - [ ] Multi-language support
-- [ ] Advanced reporting
+- [ ] Advanced reporting with charts
 - [ ] Barcode scanning
 - [ ] Cloud synchronization
 - [ ] Mobile app
 - [ ] API for external integrations
+- [ ] Configurable stock status thresholds
+- [ ] Advanced alerts and notifications
 
 ---
 
