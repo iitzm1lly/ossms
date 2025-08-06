@@ -12,6 +12,8 @@ pub struct UpdateSupplyRequest {
     pub description: Option<String>,
     pub category: Option<String>,
     pub subcategory: Option<String>,
+    pub variation: Option<String>,
+    pub brand: Option<String>,
     pub quantity: Option<i32>,
     pub unit: Option<String>,
     pub min_quantity: Option<i32>,
@@ -59,6 +61,8 @@ pub struct Supply {
     pub description: Option<String>,
     pub category: String,
     pub subcategory: Option<String>,
+    pub variation: Option<String>,
+    pub brand: Option<String>,
     pub quantity: i32,
     pub unit: String,
     pub min_quantity: i32,
@@ -188,6 +192,8 @@ impl Database {
                 description TEXT,
                 category TEXT NOT NULL,
                 subcategory TEXT,
+                variation TEXT,
+                brand TEXT,
                 quantity INTEGER NOT NULL DEFAULT 0,
                 unit TEXT NOT NULL,
                 min_quantity INTEGER NOT NULL DEFAULT 0,
@@ -213,6 +219,9 @@ impl Database {
         let _ = self.conn.execute("ALTER TABLE supplies ADD COLUMN supplier_name TEXT", []);
         let _ = self.conn.execute("ALTER TABLE supplies ADD COLUMN supplier_contact TEXT", []);
         let _ = self.conn.execute("ALTER TABLE supplies ADD COLUMN supplier_notes TEXT", []);
+        // Add variation and brand columns if they don't exist (for existing databases)
+        let _ = self.conn.execute("ALTER TABLE supplies ADD COLUMN variation TEXT", []);
+        let _ = self.conn.execute("ALTER TABLE supplies ADD COLUMN brand TEXT", []);
         println!("Supplies table created/verified");
 
         // Supply history table
@@ -440,7 +449,7 @@ impl Database {
     // Simple supplies query
     pub fn get_supplies(&self) -> Result<Vec<Supply>> {
         let mut stmt = self.conn.prepare(
-            "SELECT id, name, description, category, subcategory, quantity, unit, min_quantity, status, location, supplier, supplier_name, supplier_contact, supplier_notes, cost, pieces_per_bulk, created_at, updated_at 
+            "SELECT id, name, description, category, subcategory, variation, brand, quantity, unit, min_quantity, status, location, supplier, supplier_name, supplier_contact, supplier_notes, cost, pieces_per_bulk, created_at, updated_at 
              FROM supplies ORDER BY updated_at DESC"
         )?;
         
@@ -451,19 +460,21 @@ impl Database {
                 description: row.get(2)?,
                 category: row.get(3)?,
                 subcategory: row.get(4)?,
-                quantity: row.get(5)?,
-                unit: row.get(6)?,
-                min_quantity: row.get(7)?,
-                status: row.get(8)?,
-                location: row.get(9)?,
-                supplier: row.get(10)?,
-                supplier_name: row.get(11)?,
-                supplier_contact: row.get(12)?,
-                supplier_notes: row.get(13)?,
-                cost: row.get(14)?,
-                pieces_per_bulk: row.get(15)?,
-                created_at: row.get(16)?,
-                updated_at: row.get(17)?,
+                variation: row.get(5)?,
+                brand: row.get(6)?,
+                quantity: row.get(7)?,
+                unit: row.get(8)?,
+                min_quantity: row.get(9)?,
+                status: row.get(10)?,
+                location: row.get(11)?,
+                supplier: row.get(12)?,
+                supplier_name: row.get(13)?,
+                supplier_contact: row.get(14)?,
+                supplier_notes: row.get(15)?,
+                cost: row.get(16)?,
+                pieces_per_bulk: row.get(17)?,
+                created_at: row.get(18)?,
+                updated_at: row.get(19)?,
             })
         })?
         .collect::<Result<Vec<_>>>()?;
@@ -475,14 +486,16 @@ impl Database {
         let now = chrono::Utc::now().to_rfc3339();
         
         self.conn.execute(
-            "INSERT INTO supplies (id, name, description, category, subcategory, quantity, unit, min_quantity, status, location, supplier, supplier_name, supplier_contact, supplier_notes, cost, pieces_per_bulk, created_at, updated_at) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO supplies (id, name, description, category, subcategory, variation, brand, quantity, unit, min_quantity, status, location, supplier, supplier_name, supplier_contact, supplier_notes, cost, pieces_per_bulk, created_at, updated_at) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             params![
                 supply_data.id,
                 supply_data.name,
                 supply_data.description,
                 supply_data.category,
                 supply_data.subcategory,
+                supply_data.variation,
+                supply_data.brand,
                 supply_data.quantity,
                 supply_data.unit,
                 supply_data.min_quantity,
@@ -592,11 +605,11 @@ impl Database {
         Ok(())
     }
 
-    pub fn insert_supply(&self, id: &str, name: &str, description: Option<&str>, category: &str, subcategory: Option<&str>, quantity: i32, unit: &str, min_quantity: i32, status: &str, location: Option<&str>, supplier: Option<&str>, supplier_name: Option<&str>, supplier_contact: Option<&str>, supplier_notes: Option<&str>, cost: Option<f64>, pieces_per_bulk: Option<i32>, created_at: &str, updated_at: &str) -> Result<()> {
+    pub fn insert_supply(&self, id: &str, name: &str, description: Option<&str>, category: &str, subcategory: Option<&str>, variation: Option<&str>, brand: Option<&str>, quantity: i32, unit: &str, min_quantity: i32, status: &str, location: Option<&str>, supplier: Option<&str>, supplier_name: Option<&str>, supplier_contact: Option<&str>, supplier_notes: Option<&str>, cost: Option<f64>, pieces_per_bulk: Option<i32>, created_at: &str, updated_at: &str) -> Result<()> {
         self.conn.execute(
-            "INSERT OR IGNORE INTO supplies (id, name, description, category, subcategory, quantity, unit, min_quantity, status, location, supplier, supplier_name, supplier_contact, supplier_notes, cost, pieces_per_bulk, created_at, updated_at) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            params![id, name, description, category, subcategory, quantity, unit, min_quantity, status, location, supplier, supplier_name, supplier_contact, supplier_notes, cost, pieces_per_bulk, created_at, updated_at],
+            "INSERT OR IGNORE INTO supplies (id, name, description, category, subcategory, variation, brand, quantity, unit, min_quantity, status, location, supplier, supplier_name, supplier_contact, supplier_notes, cost, pieces_per_bulk, created_at, updated_at) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            params![id, name, description, category, subcategory, variation, brand, quantity, unit, min_quantity, status, location, supplier, supplier_name, supplier_contact, supplier_notes, cost, pieces_per_bulk, created_at, updated_at],
         )?;
         Ok(())
     }
@@ -629,16 +642,18 @@ impl Database {
     }
 
     pub fn update_supply_quantity(&self, supply_id: &str, new_quantity: i32, updated_at: &str) -> Result<()> {
+        // Ensure quantity is never negative
+        let safe_quantity = std::cmp::max(0, new_quantity);
         self.conn.execute(
             "UPDATE supplies SET quantity = ?, updated_at = ? WHERE id = ?",
-            params![new_quantity, updated_at, supply_id],
+            params![safe_quantity, updated_at, supply_id],
         )?;
         Ok(())
     }
 
     pub fn get_supply_by_id(&self, supply_id: &str) -> Result<Supply> {
         let mut stmt = self.conn.prepare(
-            "SELECT id, name, description, category, subcategory, quantity, unit, min_quantity, status, location, supplier, supplier_name, supplier_contact, supplier_notes, cost, pieces_per_bulk, created_at, updated_at 
+            "SELECT id, name, description, category, subcategory, variation, brand, quantity, unit, min_quantity, status, location, supplier, supplier_name, supplier_contact, supplier_notes, cost, pieces_per_bulk, created_at, updated_at 
              FROM supplies WHERE id = ?"
         )?;
         
@@ -649,19 +664,21 @@ impl Database {
                 description: row.get(2)?,
                 category: row.get(3)?,
                 subcategory: row.get(4)?,
-                quantity: row.get(5)?,
-                unit: row.get(6)?,
-                min_quantity: row.get(7)?,
-                status: row.get(8)?,
-                location: row.get(9)?,
-                supplier: row.get(10)?,
-                supplier_name: row.get(11)?,
-                supplier_contact: row.get(12)?,
-                supplier_notes: row.get(13)?,
-                cost: row.get(14)?,
-                pieces_per_bulk: row.get(15)?,
-                created_at: row.get(16)?,
-                updated_at: row.get(17)?,
+                variation: row.get(5)?,
+                brand: row.get(6)?,
+                quantity: row.get(7)?,
+                unit: row.get(8)?,
+                min_quantity: row.get(9)?,
+                status: row.get(10)?,
+                location: row.get(11)?,
+                supplier: row.get(12)?,
+                supplier_name: row.get(13)?,
+                supplier_contact: row.get(14)?,
+                supplier_notes: row.get(15)?,
+                cost: row.get(16)?,
+                pieces_per_bulk: row.get(17)?,
+                created_at: row.get(18)?,
+                updated_at: row.get(19)?,
             })
         })?;
 
@@ -693,6 +710,16 @@ impl Database {
         if let Some(subcategory) = &request.subcategory {
             query_parts.push("subcategory = ?");
             params.push(Box::new(subcategory.clone()));
+        }
+        
+        if let Some(variation) = &request.variation {
+            query_parts.push("variation = ?");
+            params.push(Box::new(variation.clone()));
+        }
+        
+        if let Some(brand) = &request.brand {
+            query_parts.push("brand = ?");
+            params.push(Box::new(brand.clone()));
         }
         
         if let Some(quantity) = &request.quantity {
@@ -891,61 +918,119 @@ impl Database {
             return Err(rusqlite::Error::InvalidParameterName("Bob user not found".to_string()));
         };
         
-        // Sample supplies using the correct categories and subcategories from the add item form
+        // Sample supplies with balanced stock levels (Low, Moderate, High)
+        // Format: (name, description, category, subcategory, quantity, unit, min_quantity, status, location, supplier_name, supplier_contact, supplier_notes, cost, variation, brand)
         let sample_supplies = vec![
-            // Writing Instruments
-            ("Blue Ballpoint Pens", Some("Smooth writing blue ballpoint pens, 12 per box"), "writing", Some("pens"), 120, "box", 20, "active", Some("Storage Room A"), Some("National Book Store"), Some("+63 912 345 6789"), Some("Reliable supplier for writing materials"), Some(8.99)),
-            ("Black Markers", Some("Permanent black markers, non-toxic, 10 per pack"), "writing", Some("markers"), 50, "pack", 10, "active", Some("Storage Room A"), Some("Office Warehouse"), Some("+63 923 456 7890"), Some("Quality markers for office use"), Some(12.75)),
-            ("Yellow Highlighters", Some("Fluorescent yellow highlighters, 12 per box"), "writing", Some("highlighters"), 60, "box", 15, "active", Some("Storage Room A"), Some("National Book Store"), Some("+63 934 567 8901"), Some("Bright highlighters for document marking"), Some(9.50)),
-            ("Mechanical Pencils", Some("0.5mm mechanical pencils, 12 per pack"), "writing", Some("pencils"), 48, "pack", 8, "active", Some("Storage Room A"), Some("Office Warehouse"), Some("+63 945 678 9012"), Some("Precision mechanical pencils"), Some(6.99)),
+            // LOW STOCK ITEMS (8 items)
+            ("Blue Ballpoint Pens", Some("Smooth writing blue ballpoint pens, 12 per box"), "writing", Some("pens"), 15, "box", 20, "active", Some("Storage Room A"), Some("National Book Store"), Some("+63 912 345 6789"), Some("Reliable supplier for writing materials"), Some(8.99), Some("blue"), Some("Pilot")),
+            ("Black Markers", Some("Permanent black markers, non-toxic, 10 per pack"), "writing", Some("markers"), 8, "pack", 10, "active", Some("Storage Room A"), Some("Office Warehouse"), Some("+63 923 456 7890"), Some("Quality markers for office use"), Some(12.75), Some("permanent"), Some("Sharpie")),
+            ("Yellow Highlighters", Some("Fluorescent yellow highlighters, 12 per box"), "writing", Some("highlighters"), 12, "box", 15, "active", Some("Storage Room A"), Some("National Book Store"), Some("+63 934 567 8901"), Some("Bright highlighters for document marking"), Some(9.50), Some("yellow"), Some("Stabilo")),
+            ("Mechanical Pencils", Some("0.5mm mechanical pencils, 12 per pack"), "writing", Some("pencils"), 6, "pack", 8, "active", Some("Storage Room A"), Some("Office Warehouse"), Some("+63 945 678 9012"), Some("Precision mechanical pencils"), Some(6.99), Some("0.5mm"), Some("Pentel")),
+            ("Spiral Notebooks", Some("A5 spiral-bound notebooks, lined paper, 5 per pack"), "paper", Some("notebooks"), 3, "pack", 5, "active", Some("Storage Room B"), Some("National Book Store"), Some("+63 967 890 1234"), Some("Quality notebooks for daily use"), Some(15.00), Some("lined"), Some("Oxford")),
+            ("Sticky Notes", Some("3x3 inch sticky notes, assorted colors, 12 pads per pack"), "paper", Some("sticky_notes"), 4, "pack", 10, "active", Some("Storage Room B"), Some("Office Warehouse"), Some("+63 978 901 2345"), Some("Colorful sticky notes for organization"), Some(7.99), Some("assorted"), Some("Post-it")),
+            ("Staplers", Some("Heavy-duty staplers, 5 per set"), "desk", Some("staplers"), 2, "set", 2, "active", Some("Storage Room A"), Some("National Book Store"), Some("+63 934 567 8901"), Some("Heavy-duty staplers for office use"), Some(35.00), Some("heavy-duty"), Some("Swingline")),
+            ("USB Flash Drives", Some("32GB USB 3.0 flash drives, 10 per pack"), "tech", Some("usb_drives"), 3, "pack", 5, "active", Some("Storage Room D"), Some("Tech Solutions PH"), Some("+63 978 901 2345"), Some("High-speed USB drives"), Some(89.99), Some("32GB"), Some("SanDisk")),
             
-            // Paper Products
-            ("A4 Bond Paper", Some("High-quality A4 printer paper, 80gsm, 500 sheets per ream"), "paper", Some("bond_paper"), 1000, "ream", 100, "active", Some("Storage Room B"), Some("Paper Source Philippines"), Some("+63 956 789 0123"), Some("Premium paper supplier"), Some(25.99)),
-            ("Spiral Notebooks", Some("A5 spiral-bound notebooks, lined paper, 5 per pack"), "paper", Some("notebooks"), 25, "pack", 5, "active", Some("Storage Room B"), Some("National Book Store"), Some("+63 967 890 1234"), Some("Quality notebooks for daily use"), Some(15.00)),
-            ("Sticky Notes", Some("3x3 inch sticky notes, assorted colors, 12 pads per pack"), "paper", Some("sticky_notes"), 48, "pack", 10, "active", Some("Storage Room B"), Some("Office Warehouse"), Some("+63 978 901 2345"), Some("Colorful sticky notes for organization"), Some(7.99)),
-            ("Specialty Paper", Some("Colored cardstock paper, 50 sheets per pack"), "paper", Some("specialty_paper"), 100, "pack", 20, "active", Some("Storage Room B"), Some("Paper Source Philippines"), Some("+63 989 012 3456"), Some("Specialty paper for creative projects"), Some(18.50)),
+            // MODERATE STOCK ITEMS (8 items) - Quantities 11-15 with min_quantity=10
+            ("Red Ballpoint Pens", Some("Smooth writing red ballpoint pens, 12 per box"), "writing", Some("pens"), 12, "box", 10, "active", Some("Storage Room A"), Some("National Book Store"), Some("+63 912 345 6789"), Some("Reliable supplier for writing materials"), Some(8.99), Some("red"), Some("Bic")),
+            ("Blue Gel Pens", Some("Smooth gel pens, 10 per pack"), "writing", Some("pens"), 13, "pack", 10, "active", Some("Storage Room A"), Some("Office Warehouse"), Some("+63 923 456 7890"), Some("Quality gel pens"), Some(15.50), Some("gel"), Some("Uni-ball")),
+            ("Specialty Paper", Some("Colored cardstock paper, 50 sheets per pack"), "paper", Some("specialty_paper"), 14, "pack", 10, "active", Some("Storage Room B"), Some("Paper Source Philippines"), Some("+63 989 012 3456"), Some("Specialty paper for creative projects"), Some(18.50), Some("cardstock"), Some("Canson")),
+            ("Legal Pads", Some("Legal size yellow pads, 50 sheets per pad, 5 per pack"), "paper", Some("notebooks"), 15, "pack", 10, "active", Some("Storage Room B"), Some("National Book Store"), Some("+63 967 890 1234"), Some("Quality legal pads"), Some(12.00), Some("legal"), Some("Tops")),
+            ("Document Binders", Some("3-ring binders, assorted colors, 10 per pack"), "filing", Some("binders"), 11, "pack", 10, "active", Some("Storage Room C"), Some("Office Warehouse"), Some("+63 923 456 7890"), Some("Professional document binders"), Some(32.00), Some("3-ring"), Some("Wilson Jones")),
+            ("Scotch Tape", Some("3M Scotch tape rolls, 12 per box"), "desk", Some("tape"), 12, "box", 10, "active", Some("Storage Room A"), Some("Office Warehouse"), Some("+63 945 678 9012"), Some("High-quality adhesive tape"), Some(14.99), Some("transparent"), Some("3M")),
+            ("Scissors", Some("Office scissors, 5 per set"), "desk", Some("scissors"), 13, "set", 10, "active", Some("Storage Room A"), Some("National Book Store"), Some("+63 956 789 0123"), Some("Sharp office scissors"), Some(28.50), Some("office"), Some("Fiskars")),
+            ("AA Batteries", Some("Alkaline AA batteries, 24 per pack"), "tech", Some("batteries"), 14, "pack", 10, "active", Some("Storage Room D"), Some("Tech Solutions PH"), Some("+63 990 123 4567"), Some("Long-lasting alkaline batteries"), Some(18.99), Some("alkaline"), Some("Duracell")),
             
-            // Filing & Storage
-            ("Manila Folders", Some("Letter-size manila folders, 100 per box"), "filing", Some("folders"), 200, "box", 50, "active", Some("Storage Room C"), Some("Office Warehouse"), Some("+63 990 123 4567"), Some("Durable filing folders"), Some(18.50)),
-            ("Binder Clips", Some("Assorted size binder clips, 100 per box"), "filing", Some("clips"), 300, "box", 75, "active", Some("Storage Room C"), Some("National Book Store"), Some("+63 901 234 5678"), Some("Assorted binder clips for documents"), Some(12.99)),
-            ("Storage Boxes", Some("Plastic storage boxes with lids, 5 per set"), "filing", Some("storage_boxes"), 10, "set", 2, "active", Some("Storage Room C"), Some("Storage Solutions PH"), Some("+63 912 345 6789"), Some("Plastic storage solutions"), Some(45.00)),
-            ("Document Binders", Some("3-ring binders, assorted colors, 10 per pack"), "filing", Some("binders"), 20, "pack", 4, "active", Some("Storage Room C"), Some("Office Warehouse"), Some("+63 923 456 7890"), Some("Professional document binders"), Some(32.00)),
+            // HIGH STOCK ITEMS (8 items)
+            ("A4 Bond Paper", Some("High-quality A4 printer paper, 80gsm, 500 sheets per ream"), "paper", Some("bond_paper"), 150, "ream", 100, "active", Some("Storage Room B"), Some("Paper Source Philippines"), Some("+63 956 789 0123"), Some("Premium paper supplier"), Some(25.99), Some("80gsm"), Some("Canon")),
+            ("A3 Bond Paper", Some("High-quality A3 printer paper, 80gsm, 500 sheets per ream"), "paper", Some("bond_paper"), 120, "ream", 50, "active", Some("Storage Room B"), Some("Paper Source Philippines"), Some("+63 956 789 0123"), Some("Premium paper supplier"), Some(35.99), Some("80gsm"), Some("HP")),
+            ("Manila Folders", Some("Letter-size manila folders, 100 per box"), "filing", Some("folders"), 180, "box", 50, "active", Some("Storage Room C"), Some("Office Warehouse"), Some("+63 990 123 4567"), Some("Durable filing folders"), Some(18.50), Some("letter"), Some("Avery")),
+            ("Binder Clips", Some("Assorted size binder clips, 100 per box"), "filing", Some("clips"), 200, "box", 75, "active", Some("Storage Room C"), Some("National Book Store"), Some("+63 901 234 5678"), Some("Assorted binder clips for documents"), Some(12.99), Some("assorted"), Some("Staples")),
+            ("Paper Clips", Some("Standard paper clips, 100 per box"), "filing", Some("clips"), 250, "box", 100, "active", Some("Storage Room C"), Some("National Book Store"), Some("+63 901 234 5678"), Some("Standard paper clips"), Some(8.99), Some("standard"), Some("ACCO")),
+            ("Hanging Folders", Some("Letter-size hanging folders, 25 per pack"), "filing", Some("folders"), 160, "pack", 20, "active", Some("Storage Room C"), Some("Office Warehouse"), Some("+63 990 123 4567"), Some("Hanging file folders"), Some(22.50), Some("letter"), Some("Pendaflex")),
+            ("Whiteboard Markers", Some("Dry erase markers, assorted colors, 8 per pack"), "desk", Some("markers"), 140, "pack", 8, "active", Some("Storage Room A"), Some("Office Warehouse"), Some("+63 923 456 7890"), Some("Quality whiteboard markers"), Some(18.75), Some("assorted"), Some("Expo")),
+            ("Cleaning Wipes", Some("Disinfecting cleaning wipes, 80 per pack"), "other", Some("cleaning"), 180, "pack", 20, "active", Some("Storage Room E"), Some("Cleaning Supplies PH"), Some("+63 912 345 6789"), Some("Disinfecting cleaning supplies"), Some(22.50), Some("disinfecting"), Some("Lysol")),
             
-            // Desk Accessories
-            ("Staplers", Some("Heavy-duty staplers, 5 per set"), "desk", Some("staplers"), 10, "set", 2, "active", Some("Storage Room A"), Some("National Book Store"), Some("+63 934 567 8901"), Some("Heavy-duty staplers for office use"), Some(35.00)),
-            ("Scotch Tape", Some("3M Scotch tape rolls, 12 per box"), "desk", Some("tape"), 24, "box", 6, "active", Some("Storage Room A"), Some("Office Warehouse"), Some("+63 945 678 9012"), Some("High-quality adhesive tape"), Some(14.99)),
-            ("Scissors", Some("Office scissors, 5 per set"), "desk", Some("scissors"), 10, "set", 2, "active", Some("Storage Room A"), Some("National Book Store"), Some("+63 956 789 0123"), Some("Sharp office scissors"), Some(28.50)),
-            ("Desk Organizers", Some("Multi-compartment desk organizers, 3 per set"), "desk", Some("organizers"), 6, "set", 1, "active", Some("Storage Room A"), Some("Storage Solutions PH"), Some("+63 967 890 1234"), Some("Multi-functional desk organizers"), Some(55.00)),
-            
-            // Technology
-            ("USB Flash Drives", Some("32GB USB 3.0 flash drives, 10 per pack"), "tech", Some("usb_drives"), 20, "pack", 5, "active", Some("Storage Room D"), Some("Tech Solutions PH"), Some("+63 978 901 2345"), Some("High-speed USB drives"), Some(89.99)),
-            ("HDMI Cables", Some("6ft HDMI cables, 5 per pack"), "tech", Some("cables"), 15, "pack", 3, "active", Some("Storage Room D"), Some("Tech Solutions PH"), Some("+63 989 012 3456"), Some("Quality HDMI cables"), Some(25.00)),
-            ("AA Batteries", Some("Alkaline AA batteries, 24 per pack"), "tech", Some("batteries"), 48, "pack", 12, "active", Some("Storage Room D"), Some("Tech Solutions PH"), Some("+63 990 123 4567"), Some("Long-lasting alkaline batteries"), Some(18.99)),
-            ("Computer Mice", Some("Wireless optical mice, 5 per pack"), "tech", Some("peripherals"), 10, "pack", 2, "active", Some("Storage Room D"), Some("Tech Solutions PH"), Some("+63 901 234 5678"), Some("Wireless computer peripherals"), Some(75.00)),
-            
-            // Other
-            ("Cleaning Wipes", Some("Disinfecting cleaning wipes, 80 per pack"), "other", Some("cleaning"), 160, "pack", 20, "active", Some("Storage Room E"), Some("Cleaning Supplies PH"), Some("+63 912 345 6789"), Some("Disinfecting cleaning supplies"), Some(22.50)),
-            ("Coffee Beans", Some("Premium coffee beans for office coffee machine, 1kg per bag"), "other", Some("misc"), 10, "unit", 2, "active", Some("Kitchen"), Some("Coffee Corner PH"), Some("+63 923 456 7890"), Some("Premium coffee beans"), Some(45.00)),
+            // ADDITIONAL ITEMS (10 items) - Mixed stock levels
+            ("Storage Boxes", Some("Plastic storage boxes with lids, 5 per set"), "filing", Some("storage_boxes"), 8, "set", 2, "active", Some("Storage Room C"), Some("Storage Solutions PH"), Some("+63 912 345 6789"), Some("Plastic storage solutions"), Some(45.00), Some("plastic"), Some("Sterilite")),
+            ("Desk Organizers", Some("Multi-compartment desk organizers, 3 per set"), "desk", Some("organizers"), 4, "set", 1, "active", Some("Storage Room A"), Some("Storage Solutions PH"), Some("+63 967 890 1234"), Some("Multi-functional desk organizers"), Some(55.00), Some("multi-compartment"), Some("IKEA")),
+            ("Hole Punch", Some("3-hole punch, 2 per set"), "desk", Some("staplers"), 6, "set", 2, "active", Some("Storage Room A"), Some("National Book Store"), Some("+63 934 567 8901"), Some("3-hole punch for documents"), Some(25.00), Some("3-hole"), Some("Swingline")),
+            ("HDMI Cables", Some("6ft HDMI cables, 5 per pack"), "tech", Some("cables"), 12, "pack", 3, "active", Some("Storage Room D"), Some("Tech Solutions PH"), Some("+63 989 012 3456"), Some("Quality HDMI cables"), Some(25.00), Some("6ft"), Some("Amazon Basics")),
+            ("Computer Mice", Some("Wireless optical mice, 5 per pack"), "tech", Some("peripherals"), 8, "pack", 2, "active", Some("Storage Room D"), Some("Tech Solutions PH"), Some("+63 901 234 5678"), Some("Wireless computer peripherals"), Some(75.00), Some("wireless"), Some("Logitech")),
+            ("Keyboard", Some("USB wired keyboards, 3 per pack"), "tech", Some("peripherals"), 5, "pack", 2, "active", Some("Storage Room D"), Some("Tech Solutions PH"), Some("+63 978 901 2345"), Some("Standard USB keyboards"), Some(45.00), Some("wired"), Some("Microsoft")),
+            ("Webcam", Some("HD webcams, 2 per pack"), "tech", Some("peripherals"), 3, "pack", 1, "active", Some("Storage Room D"), Some("Tech Solutions PH"), Some("+63 989 012 3456"), Some("HD webcams for video calls"), Some(120.00), Some("HD"), Some("Logitech")),
+            ("Coffee Beans", Some("Premium coffee beans for office coffee machine, 1kg per bag"), "other", Some("misc"), 7, "unit", 2, "active", Some("Kitchen"), Some("Coffee Corner PH"), Some("+63 923 456 7890"), Some("Premium coffee beans"), Some(45.00), Some("arabica"), Some("Starbucks")),
+            ("Hand Sanitizer", Some("Alcohol-based hand sanitizer, 500ml bottles"), "other", Some("cleaning"), 20, "bottle", 6, "active", Some("Storage Room E"), Some("Cleaning Supplies PH"), Some("+63 912 345 6789"), Some("Hand sanitizer for office use"), Some(15.99), Some("500ml"), Some("Purell")),
+            ("First Aid Kit", Some("Basic first aid kit, 1 per unit"), "other", Some("misc"), 4, "unit", 1, "active", Some("Storage Room E"), Some("Medical Supplies PH"), Some("+63 945 678 9012"), Some("Basic first aid supplies"), Some(35.00), Some("basic"), Some("Johnson & Johnson")),
         ];
         
-        for (name, description, category, subcategory, quantity, unit, min_quantity, status, location, supplier_name, supplier_contact, supplier_notes, cost) in sample_supplies {
+        for (name, description, category, subcategory, quantity, unit, min_quantity, status, location, supplier_name, supplier_contact, supplier_notes, cost, variation, brand) in sample_supplies {
             let supply_id = uuid::Uuid::new_v4().to_string();
             let now = chrono::Utc::now().to_rfc3339();
             
-            // Calculate pieces_per_bulk based on unit type
-            let pieces_per_bulk = match unit {
-                "box" => Some(12),
-                "pack" => Some(10),
-                "ream" => Some(500),
-                "set" => Some(5),
-                "roll" => Some(1),
-                "bottle" => Some(1),
-                "carton" => Some(24),
-                "bulk" => Some(12),
-                "unit" => Some(1),
-                "piece" => Some(1),
-                "item" => Some(1),
-                _ => Some(12), // Default fallback
+            // Calculate pieces_per_bulk based on the specific item description
+            let pieces_per_bulk = match name {
+                // Writing Instruments
+                "Blue Ballpoint Pens" => Some(12), // "12 per box"
+                "Black Markers" => Some(10), // "10 per pack"
+                "Yellow Highlighters" => Some(12), // "12 per box"
+                "Mechanical Pencils" => Some(12), // "12 per pack"
+                "Red Ballpoint Pens" => Some(12), // "12 per box"
+                "Blue Gel Pens" => Some(10), // "10 per pack"
+                
+                // Paper Products
+                "A4 Bond Paper" => Some(500), // "500 sheets per ream"
+                "Spiral Notebooks" => Some(5), // "5 per pack"
+                "Sticky Notes" => Some(12), // "12 pads per pack"
+                "Specialty Paper" => Some(50), // "50 sheets per pack"
+                "A3 Bond Paper" => Some(500), // "500 sheets per ream"
+                "Legal Pads" => Some(5), // "5 per pack"
+                
+                // Filing & Storage
+                "Manila Folders" => Some(100), // "100 per box"
+                "Binder Clips" => Some(100), // "100 per box"
+                "Storage Boxes" => Some(5), // "5 per set"
+                "Document Binders" => Some(10), // "10 per pack"
+                "Paper Clips" => Some(100), // "100 per box"
+                "Hanging Folders" => Some(25), // "25 per pack"
+                
+                // Desk Accessories
+                "Staplers" => Some(5), // "5 per set"
+                "Scotch Tape" => Some(12), // "12 per box"
+                "Scissors" => Some(5), // "5 per set"
+                "Desk Organizers" => Some(3), // "3 per set"
+                "Hole Punch" => Some(2), // "2 per set"
+                "Whiteboard Markers" => Some(8), // "8 per pack"
+                
+                // Technology
+                "USB Flash Drives" => Some(10), // "10 per pack"
+                "HDMI Cables" => Some(5), // "5 per pack"
+                "AA Batteries" => Some(24), // "24 per pack"
+                "Computer Mice" => Some(5), // "5 per pack"
+                "Keyboard" => Some(3), // "3 per pack"
+                "Webcam" => Some(2), // "2 per pack"
+                
+                // Other
+                "Cleaning Wipes" => Some(80), // "80 per pack"
+                "Coffee Beans" => Some(1), // "1kg per bag" (unit)
+                "Hand Sanitizer" => Some(1), // "500ml bottles" (bottle)
+                "First Aid Kit" => Some(1), // "1 per unit"
+                
+                // Default fallback based on unit type
+                _ => match unit {
+                    "box" => Some(12),
+                    "pack" => Some(10),
+                    "ream" => Some(500),
+                    "set" => Some(5),
+                    "roll" => Some(1),
+                    "bottle" => Some(1),
+                    "carton" => Some(24),
+                    "bulk" => Some(12),
+                    "unit" => Some(1),
+                    "piece" => Some(1),
+                    "item" => Some(1),
+                    _ => Some(12),
+                }
             };
             
             self.insert_supply(
@@ -954,6 +1039,8 @@ impl Database {
                 description,
                 category,
                 subcategory,
+                variation,
+                brand,
                 quantity,
                 unit,
                 min_quantity,
@@ -1010,7 +1097,7 @@ impl Database {
             // Calculate new quantity
             let new_quantity = match action {
                 "Stock In" => current_quantity + quantity,
-                "Stock Out" => current_quantity - quantity,
+                "Stock Out" => std::cmp::max(0, current_quantity - quantity), // Prevent negative quantities
                 _ => current_quantity
             };
             
@@ -1084,6 +1171,40 @@ impl Database {
             params![now],
         )?;
         Ok(())
+    }
+
+    // Recalculate stock status for all supplies based on quantity vs min_quantity
+    pub fn recalculate_all_stock_status(&self) -> Result<()> {
+        let now = chrono::Utc::now().to_rfc3339();
+        
+        // Get all supplies
+        let supplies = self.get_supplies()?;
+        
+        for supply in &supplies {
+            let new_status = self.calculate_stock_status(supply.quantity, supply.min_quantity);
+            
+            // Update the status in the database
+            self.conn.execute(
+                "UPDATE supplies SET status = ?, updated_at = ? WHERE id = ?",
+                params![new_status, now, supply.id],
+            )?;
+        }
+        
+        println!("Recalculated stock status for {} supplies", supplies.len());
+        Ok(())
+    }
+
+    // Calculate stock status based on quantity and min_quantity
+    fn calculate_stock_status(&self, quantity: i32, min_quantity: i32) -> String {
+        let moderate_threshold = (min_quantity as f64 * 1.5) as i32;
+        
+        if quantity <= min_quantity {
+            "Low".to_string()
+        } else if quantity <= moderate_threshold {
+            "Moderate".to_string()
+        } else {
+            "High".to_string()
+        }
     }
 }
 
