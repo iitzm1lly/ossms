@@ -11,6 +11,26 @@ use lettre::{Message, SmtpTransport, Transport};
 use lettre::transport::smtp::authentication::Credentials;
 use rand::Rng;
 
+// ============================================================================
+// EMAIL CONFIGURATION - UPDATE THESE VALUES FOR YOUR EMAIL SETUP
+// ============================================================================
+// 
+// To set up email password reset functionality:
+// 1. Replace "your-email@gmail.com" with your actual Gmail address
+// 2. Replace "your-app-password" with your Gmail App Password
+// 3. Make sure 2-Factor Authentication is enabled on your Gmail account
+// 4. Generate an App Password from Google Account settings
+//
+// Example:
+// const SMTP_EMAIL: &str = "admin@ust.edu.ph";
+// const SMTP_PASSWORD: &str = "abcd efgh ijkl mnop";
+//
+// ============================================================================
+
+// Hardcoded email configuration
+const SMTP_EMAIL: &str = "your-email@gmail.com";  // Replace with your email
+const SMTP_PASSWORD: &str = "your-app-password";  // Replace with your app password
+
 // App state with connection pooling
 struct AppState {
     db: Mutex<Database>,
@@ -541,38 +561,24 @@ async fn send_reset_email(email: &str, token: &str, username: &str) -> Result<()
         .body(email_body)
         .map_err(|e| format!("Failed to create email: {}", e))?;
 
-    // Check if we're in development mode (no SMTP credentials) or production mode
-    let smtp_email = std::env::var("SMTP_EMAIL").ok();
-    let smtp_password = std::env::var("SMTP_PASSWORD").ok();
+    // Use hardcoded credentials for easier setup
+    println!("=== SENDING EMAIL ===");
+    println!("To: {}", email);
+    println!("Subject: OSSMS Password Reset");
+    println!("Token: {}", token);
+    println!("========================");
     
-    if let (Some(email), Some(password)) = (smtp_email, smtp_password) {
-        // Production mode - send real email
-        println!("=== SENDING REAL EMAIL ===");
-        println!("To: {}", email);
-        println!("Subject: OSSMS Password Reset");
-        println!("Token: {}", token);
-        println!("========================");
-        
-        let creds = Credentials::new(email, password);
-        
-        let mailer = SmtpTransport::relay("smtp.gmail.com")
-            .unwrap()
-            .credentials(creds)
-            .build();
+    let creds = Credentials::new(SMTP_EMAIL.to_string(), SMTP_PASSWORD.to_string());
+    
+    let mailer = SmtpTransport::relay("smtp.gmail.com")
+        .unwrap()
+        .credentials(creds)
+        .build();
 
-        mailer.send(&email_message)
-            .map_err(|e| format!("Failed to send email: {}", e))?;
-            
-        println!("Email sent successfully!");
-    } else {
-        // Development mode - just log the email
-        println!("=== EMAIL WOULD BE SENT (Development Mode) ===");
-        println!("To: {}", email);
-        println!("Subject: OSSMS Password Reset");
-        println!("Token: {}", token);
-        println!("Set SMTP_EMAIL and SMTP_PASSWORD environment variables to send real emails");
-        println!("========================");
-    }
+    mailer.send(&email_message)
+        .map_err(|e| format!("Failed to send email: {}", e))?;
+        
+    println!("Email sent successfully!");
 
     Ok(())
 }
