@@ -107,6 +107,7 @@ ossms/
 ├── CHANGELOG.md           # Version history
 ├── LICENSE                # MIT License
 ├── DOCUMENTATION.md       # This file
+├── LOGO_LICENSE.md        # Logo usage guidelines
 ├── build-production.ps1   # Production build script
 ├── build.ps1              # Windows build script
 ├── build.sh               # Unix build script
@@ -188,12 +189,22 @@ ossms/
 - **Production Builds**: Automated build scripts
 - **Database Optimization**: SQLite with proper indexing
 - **Security**: Password hashing and secure authentication
+- **Stock Status Calculation**: Centralized and consistent logic
+- **Modern PDF Reports**: Institutional branding and optimized layout
+- **User Experience**: Helpful tooltips and improved interface
 
 ### Build Automation
 - Automated production build script
 - Clean build processes
 - Optimized for deployment
 - Cross-platform compatibility
+
+### Recent Improvements
+- **Stock Status Consistency**: Fixed calculation logic across all components
+- **PDF Report Modernization**: Updated styling and institutional branding
+- **Space Optimization**: Improved content density in reports
+- **Debug Cleanup**: Removed obsolete files and console statements
+- **Enhanced UX**: Added tooltips and better user guidance
 
 ---
 
