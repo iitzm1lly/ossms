@@ -199,7 +199,6 @@ export function UpdateUserDialog({ open, onOpenChange, user, onSuccess }: Update
             setSelectedPermissions({})
           }
         } catch (error) {
-          console.error('Error parsing permissions:', error)
           setSelectedPermissions({})
         }
       } else {
