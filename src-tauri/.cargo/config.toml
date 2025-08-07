@@ -14,4 +14,5 @@ incremental = true
 opt-level = 0 
 
 [target.x86_64-pc-windows-msvc]
-linker = "rust-lld" 
+linker = "rust-lld"
+rustflags = ["-C", "target-feature=+crt-static", "-C", "link-args=/SUBSYSTEM:WINDOWS"] 
