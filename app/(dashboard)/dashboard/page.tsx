@@ -164,14 +164,13 @@ export default function DashboardPage() {
             // Update localStorage with parsed permissions
             localStorage.setItem("user", JSON.stringify(user))
           } catch (error) {
-            console.error('Error parsing permissions string:', error)
             user.permissions = {}
           }
         }
         
 
       } catch (error) {
-        console.error('Error parsing user data:', error)
+        // User data parsing failed silently
       }
     }
 
