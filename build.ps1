@@ -25,8 +25,8 @@ Set-Location ".."
 Write-Host "📥 Installing dependencies..." -ForegroundColor Yellow
 npm install
 
-# Step 5: Build the application
-Write-Host "🔨 Building application..." -ForegroundColor Yellow
-npm run tauri:build
+# Step 5: Build the application in release mode
+Write-Host "🔨 Building application in release mode..." -ForegroundColor Yellow
+npm run tauri:build -- --release
 
 Write-Host "✅ Clean build completed!" -ForegroundColor Green 
