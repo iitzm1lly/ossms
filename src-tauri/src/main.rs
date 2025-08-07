@@ -10,6 +10,7 @@ use tauri::State;
 use lettre::{Message, SmtpTransport, Transport};
 use lettre::transport::smtp::authentication::Credentials;
 use rand::Rng;
+use uuid::Uuid;
 
 // ============================================================================
 // EMAIL CONFIGURATION - UPDATE THESE VALUES FOR YOUR EMAIL SETUP
