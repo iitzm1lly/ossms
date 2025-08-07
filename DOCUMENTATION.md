@@ -16,6 +16,7 @@ This document provides an overview of all documentation files in the OSSMS proje
 - Troubleshooting guide
 - API reference
 - Production build instructions
+- Data visualization features
 
 ### [BUILD.md](BUILD.md)
 **Purpose**: Build system documentation and troubleshooting
@@ -49,6 +50,7 @@ This document provides an overview of all documentation files in the OSSMS proje
 - Breaking changes
 - Migration guides
 - Production-ready features
+- Recent improvements (chart spacing, UI enhancements)
 
 ## 📋 Configuration Files
 
@@ -205,6 +207,7 @@ ossms/
 - **Space Optimization**: Improved content density in reports
 - **Debug Cleanup**: Removed obsolete files and console statements
 - **Enhanced UX**: Added tooltips and better user guidance
+- **Chart Spacing Optimization**: Improved text readability in history dashboard charts
 
 ---
 
