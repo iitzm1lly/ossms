@@ -5,7 +5,7 @@ use uuid::Uuid;
 use std::path::PathBuf;
 use std::fs;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct UpdateSupplyRequest {
     pub id: String,
     pub name: Option<String>,
@@ -29,7 +29,7 @@ pub struct UpdateSupplyRequest {
     pub stock_out_reason: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct UpdateUserRequest {
     pub id: String,
     pub firstname: String,
@@ -40,7 +40,7 @@ pub struct UpdateUserRequest {
     pub permissions: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct User {
     pub id: String,
     pub username: String,
@@ -54,7 +54,7 @@ pub struct User {
     pub updated_at: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct Supply {
     pub id: String,
     pub name: String,
@@ -78,7 +78,7 @@ pub struct Supply {
     pub updated_at: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct SupplyHistory {
     pub id: String,
     pub supply_id: String,
@@ -91,7 +91,7 @@ pub struct SupplyHistory {
     pub created_at: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct EnrichedSupplyHistory {
     pub id: String,
     pub supply_id: String,
