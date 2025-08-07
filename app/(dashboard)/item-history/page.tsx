@@ -129,7 +129,6 @@ export default function ItemHistoryPage() {
         return []
       }
     } catch (error) {
-      console.error("Error getting Supply Histories:", error)
       return []
     } finally {
       setIsLoading(false)
@@ -171,7 +170,6 @@ export default function ItemHistoryPage() {
           setPerformedByUsers([])
         }
       } catch (error) {
-        console.error("Error loading history:", error)
         toast({
           title: "Error loading item history",
           description: "There was a problem loading the item history.",
