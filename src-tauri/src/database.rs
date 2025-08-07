@@ -148,8 +148,8 @@ impl Database {
         // Always initialize tables (safe with IF NOT EXISTS)
         db.init_tables()?;
         
-        // Always ensure admin user exists
-        db.insert_default_admin()?;
+        // Admin user creation removed - keeping only the 4 custom accounts
+        // db.insert_default_admin()?;
         
         // Only seed sample data on fresh install or if no sample data exists
         if is_fresh_install {
@@ -783,6 +783,14 @@ impl Database {
         let now = chrono::Utc::now().to_rfc3339();
         
         // Create history record for deletion
+        // Get admin user ID for history record
+        let admin_user = self.get_user_by_username("abbarcelo")?;
+        let admin_id = if let Some(user) = admin_user {
+            user.id
+        } else {
+            return Err(rusqlite::Error::InvalidParameterName("Admin user not found".to_string()));
+        };
+        
         let history = SupplyHistory {
             id: uuid::Uuid::new_v4().to_string(),
             supply_id: supply_id.to_string(),
@@ -791,7 +799,7 @@ impl Database {
             previous_quantity: supply.quantity,
             new_quantity: 0,
             notes: Some("Item permanently removed from inventory".to_string()),
-            user_id: "admin".to_string(), // Default to admin for now
+            user_id: admin_id,
             created_at: now.clone(),
         };
         
@@ -839,8 +847,8 @@ impl Database {
 
     // Internal seeding function (moved from main.rs)
     fn seed_sample_data_internal(&self) -> Result<()> {
-        // Get admin user ID for history records
-        let admin_user = self.get_user_by_username("admin")?;
+        // Get admin user ID for history records (using abbarcelo as admin)
+        let admin_user = self.get_user_by_username("abbarcelo")?;
         let admin_id = if let Some(user) = admin_user {
             user.id
         } else {
