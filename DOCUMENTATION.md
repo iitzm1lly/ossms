@@ -52,6 +52,25 @@ This document provides an overview of all documentation files in the OSSMS proje
 - Production-ready features
 - Recent improvements (chart spacing, UI enhancements)
 
+### [EMAIL_SETUP.md](EMAIL_SETUP.md)
+**Purpose**: Email configuration guide
+**Audience**: Administrators, developers
+**Content**:
+- Step-by-step email setup instructions
+- Gmail App Password configuration
+- Troubleshooting email issues
+- Security considerations
+
+### [BACKUP_GUIDE.md](BACKUP_GUIDE.md)
+**Purpose**: Data backup and recovery guide
+**Audience**: Administrators, users
+**Content**:
+- Database location and structure
+- Manual and automated backup methods
+- Restore procedures
+- Backup security and encryption
+- Emergency recovery procedures
+
 ## 📋 Configuration Files
 
 ### [package.json](package.json)
@@ -110,6 +129,8 @@ ossms/
 ├── LICENSE                # MIT License
 ├── DOCUMENTATION.md       # This file
 ├── LOGO_LICENSE.md        # Logo usage guidelines
+├── EMAIL_SETUP.md         # Email configuration guide
+├── BACKUP_GUIDE.md        # Data backup and recovery guide
 ├── build-production.ps1   # Production build script
 ├── build.ps1              # Windows build script
 ├── build.sh               # Unix build script
