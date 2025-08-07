@@ -345,7 +345,31 @@ impl Database {
         Ok(user)
     }
 
-    pub fn create_user(&self, user_data: &User) -> Result<String> {
+    pub fn get_user_by_id(&self, user_id: &str) -> Result<Option<User>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id, username, password, firstname, lastname, email, role, permissions, created_at, updated_at 
+             FROM users WHERE id = ?"
+        )?;
+        
+        let user = stmt.query_row(params![user_id], |row| {
+            Ok(User {
+                id: row.get(0)?,
+                username: row.get(1)?,
+                password: row.get(2)?,
+                firstname: row.get(3)?,
+                lastname: row.get(4)?,
+                email: row.get(5)?,
+                role: row.get(6)?,
+                permissions: row.get(7)?,
+                created_at: row.get(8)?,
+                updated_at: row.get(9)?,
+            })
+        }).optional()?;
+
+        Ok(user)
+    }
+
+    pub fn create_user(&self, user_data: &User, created_by_user_id: &str) -> Result<String> {
         let hashed_password = hash(&user_data.password, DEFAULT_COST)
             .map_err(|e| rusqlite::Error::InvalidParameterName(e.to_string()))?;
         let now = chrono::Utc::now().to_rfc3339();
@@ -366,6 +390,21 @@ impl Database {
                 now
             ],
         )?;
+
+        // Create a history record for user creation
+        let history = SupplyHistory {
+            id: uuid::Uuid::new_v4().to_string(),
+            supply_id: "SYSTEM".to_string(), // Use SYSTEM as supply_id for user operations
+            action: "USER_CREATED".to_string(),
+            quantity: 0,
+            previous_quantity: 0,
+            new_quantity: 0,
+            notes: Some(format!("User '{}' created by admin", user_data.username)),
+            user_id: created_by_user_id.to_string(),
+            created_at: now.clone(),
+        };
+        
+        self.create_supply_history(&history)?;
 
         Ok(user_data.id.clone())
     }
@@ -417,12 +456,34 @@ impl Database {
 
 
 
-    pub fn delete_user(&self, user_id: &str) -> Result<()> {
+    pub fn delete_user(&self, user_id: &str, deleted_by_user_id: &str) -> Result<()> {
+        // Get the user being deleted for history
+        let user_being_deleted = self.get_user_by_id(user_id)?;
+        let username = if let Some(user) = user_being_deleted {
+            user.username
+        } else {
+            return Err(rusqlite::Error::InvalidParameterName("User not found".to_string()));
+        };
+        
         self.conn.execute(
             "DELETE FROM users WHERE id = ?",
             params![user_id],
         )?;
-
+        
+        // Create a history record for user deletion
+        let history = SupplyHistory {
+            id: uuid::Uuid::new_v4().to_string(),
+            supply_id: "SYSTEM".to_string(), // Use SYSTEM as supply_id for user operations
+            action: "USER_DELETED".to_string(),
+            quantity: 0,
+            previous_quantity: 0,
+            new_quantity: 0,
+            notes: Some(format!("User '{}' deleted by admin", username)),
+            user_id: deleted_by_user_id.to_string(),
+            created_at: chrono::Utc::now().to_rfc3339(),
+        };
+        
+        self.create_supply_history(&history)?;
         Ok(())
     }
 
@@ -463,7 +524,7 @@ impl Database {
         Ok(supplies)
     }
 
-    pub fn create_supply(&self, supply_data: &Supply) -> Result<String> {
+    pub fn create_supply(&self, supply_data: &Supply, created_by_user_id: &str) -> Result<String> {
         let now = chrono::Utc::now().to_rfc3339();
         
         self.conn.execute(
@@ -492,6 +553,21 @@ impl Database {
                 now
             ],
         )?;
+
+        // Create a history record for supply creation
+        let history = SupplyHistory {
+            id: uuid::Uuid::new_v4().to_string(),
+            supply_id: supply_data.id.clone(),
+            action: "ITEM_CREATED".to_string(),
+            quantity: supply_data.quantity,
+            previous_quantity: 0,
+            new_quantity: supply_data.quantity,
+            notes: Some(format!("Item '{}' added to inventory", supply_data.name)),
+            user_id: created_by_user_id.to_string(),
+            created_at: now.clone(),
+        };
+        
+        self.create_supply_history(&history)?;
 
         Ok(supply_data.id.clone())
     }
@@ -557,8 +633,16 @@ impl Database {
 
 
 
-    pub fn update_user(&self, user_id: &str, request: &UpdateUserRequest) -> Result<()> {
+    pub fn update_user(&self, user_id: &str, request: &UpdateUserRequest, updated_by_user_id: &str) -> Result<()> {
         let now = chrono::Utc::now().to_rfc3339();
+        
+        // Get the user being updated for history
+        let user_being_updated = self.get_user_by_id(user_id)?;
+        let username = if let Some(user) = user_being_updated {
+            user.username
+        } else {
+            "Unknown".to_string()
+        };
         
         self.conn.execute(
             "UPDATE users SET firstname = ?, lastname = ?, username = ?, email = ?, role = ?, permissions = ?, updated_at = ? WHERE id = ?",
@@ -573,6 +657,21 @@ impl Database {
                 user_id
             ],
         )?;
+        
+        // Create a history record for user update
+        let history = SupplyHistory {
+            id: uuid::Uuid::new_v4().to_string(),
+            supply_id: "SYSTEM".to_string(), // Use SYSTEM as supply_id for user operations
+            action: "USER_UPDATED".to_string(),
+            quantity: 0,
+            previous_quantity: 0,
+            new_quantity: 0,
+            notes: Some(format!("User '{}' updated by admin", username)),
+            user_id: updated_by_user_id.to_string(),
+            created_at: now.clone(),
+        };
+        
+        self.create_supply_history(&history)?;
         Ok(())
     }
 
@@ -777,18 +876,17 @@ impl Database {
         Ok(())
     }
 
-    pub fn delete_supply(&self, supply_id: &str) -> Result<()> {
+    pub fn delete_supply(&self, supply_id: &str, user_id: &str) -> Result<()> {
         // First, create a history record for the deletion
         let supply = self.get_supply_by_id(supply_id)?;
         let now = chrono::Utc::now().to_rfc3339();
         
-        // Create history record for deletion
-        // Get admin user ID for history record
-        let admin_user = self.get_user_by_username("abbarcelo")?;
-        let admin_id = if let Some(user) = admin_user {
+        // Get current user ID for history record
+        let current_user = self.get_user_by_id(user_id)?;
+        let user_id_for_history = if let Some(user) = current_user {
             user.id
         } else {
-            return Err(rusqlite::Error::InvalidParameterName("Admin user not found".to_string()));
+            return Err(rusqlite::Error::InvalidParameterName("Current user not found".to_string()));
         };
         
         let history = SupplyHistory {
@@ -799,7 +897,7 @@ impl Database {
             previous_quantity: supply.quantity,
             new_quantity: 0,
             notes: Some("Item permanently removed from inventory".to_string()),
-            user_id: admin_id,
+            user_id: user_id_for_history,
             created_at: now.clone(),
         };
         
@@ -814,11 +912,52 @@ impl Database {
         Ok(())
     }
 
-    pub fn delete_supply_history(&self, history_id: &str) -> Result<()> {
+    pub fn delete_supply_history(&self, history_id: &str, deleted_by_user_id: &str) -> Result<()> {
+        // Get the history record being deleted for logging
+        let mut stmt = self.conn.prepare(
+            "SELECT sh.id, sh.supply_id, s.name, sh.action, sh.notes 
+             FROM supply_histories sh 
+             LEFT JOIN supplies s ON sh.supply_id = s.id 
+             WHERE sh.id = ?"
+        )?;
+        
+        let history_info = stmt.query_row(params![history_id], |row| {
+            Ok((
+                row.get::<_, String>(0)?, // id
+                row.get::<_, String>(1)?, // supply_id
+                row.get::<_, Option<String>>(2)?, // supply_name
+                row.get::<_, String>(3)?, // action
+                row.get::<_, Option<String>>(4)?, // notes
+            ))
+        }).optional()?;
+        
+        let (history_id_str, supply_id, supply_name, action, notes) = if let Some(info) = history_info {
+            info
+        } else {
+            return Err(rusqlite::Error::InvalidParameterName("History record not found".to_string()));
+        };
+        
         self.conn.execute(
             "DELETE FROM supply_histories WHERE id = ?",
             params![history_id]
         )?;
+        
+        // Create a history record for history deletion
+        let history = SupplyHistory {
+            id: uuid::Uuid::new_v4().to_string(),
+            supply_id: "SYSTEM".to_string(), // Use SYSTEM as supply_id for system operations
+            action: "HISTORY_DELETED".to_string(),
+            quantity: 0,
+            previous_quantity: 0,
+            new_quantity: 0,
+            notes: Some(format!("History record for '{}' ({}) deleted", 
+                supply_name.unwrap_or_else(|| supply_id.clone()), 
+                action)),
+            user_id: deleted_by_user_id.to_string(),
+            created_at: chrono::Utc::now().to_rfc3339(),
+        };
+        
+        self.create_supply_history(&history)?;
         
         Ok(())
     }
