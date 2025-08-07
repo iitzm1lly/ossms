@@ -252,48 +252,6 @@ impl Database {
         Ok(())
     }
 
-    fn insert_default_admin(&self) -> Result<()> {
-        // Check if admin user already exists
-        let count: i32 = self.conn.query_row(
-            "SELECT COUNT(*) FROM users WHERE username = ?",
-            params!["admin"],
-            |row| row.get(0)
-        )?;
-
-        if count == 0 {
-            let hashed_password = hash("password", DEFAULT_COST)
-                .map_err(|e| rusqlite::Error::InvalidParameterName(e.to_string()))?;
-            let now = chrono::Utc::now().to_rfc3339();
-            
-            // Create admin permissions with full access
-            let admin_permissions = r#"{
-                "users": ["view", "create", "edit", "delete"],
-                "supplies": ["view", "create", "edit", "delete"],
-                "supply_histories": ["view", "create", "edit", "delete"],
-                "reports": ["view"]
-            }"#;
-            
-            self.conn.execute(
-                "INSERT INTO users (id, username, password, firstname, lastname, email, role, permissions, created_at, updated_at) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                params![
-                    Uuid::new_v4().to_string(),
-                    "admin",
-                    hashed_password,
-                    "Admin",
-                    "User",
-                    "admin@ossms.com",
-                    "admin",
-                    admin_permissions,
-                    now,
-                    now
-                ],
-            )?;
-        }
-
-        Ok(())
-    }
-
     // User operations
     pub fn get_users(&self) -> Result<Vec<User>> {
         let mut stmt = self.conn.prepare(
