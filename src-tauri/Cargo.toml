@@ -52,9 +52,7 @@ debug = false
 overflow-checks = false
 rpath = false
 
-# Windows subsystem configuration to prevent console window
-[target.'cfg(windows)'.build]
-rustflags = ["-C", "target-feature=+crt-static"]
+
 
 [profile.dev]
 opt-level = 1
