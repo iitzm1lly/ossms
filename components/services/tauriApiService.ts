@@ -262,8 +262,17 @@ class TauriApiService {
       if (!this.invoke) {
         throw new Error('Tauri invoke function not available');
       }
+      
+      // Get current user from localStorage
+      const userStr = localStorage.getItem('user');
+      if (!userStr) {
+        throw new Error('User not found in session');
+      }
+      const user = JSON.parse(userStr);
+      
       return await this.invoke('create_user', {
-        request: userData
+        request: userData,
+        user_id: user.id
       }) as string;
     } catch (error) {
       throw error;
@@ -276,11 +285,20 @@ class TauriApiService {
       if (!this.invoke) {
         throw new Error('Tauri invoke function not available');
       }
+      
+      // Get current user from localStorage
+      const userStr = localStorage.getItem('user');
+      if (!userStr) {
+        throw new Error('User not found in session');
+      }
+      const user = JSON.parse(userStr);
+      
       return await this.invoke('update_user', {
         request: {
           id: userId,
           ...userData
-        }
+        },
+        user_id: user.id
       }) as string;
     } catch (error) {
       throw error;
@@ -293,8 +311,17 @@ class TauriApiService {
       if (!this.invoke) {
         throw new Error('Tauri invoke function not available');
       }
+      
+      // Get current user from localStorage
+      const userStr = localStorage.getItem('user');
+      if (!userStr) {
+        throw new Error('User not found in session');
+      }
+      const user = JSON.parse(userStr);
+      
       return await this.invoke('delete_user', {
-        request: { id: userId }
+        user_id: userId,
+        current_user_id: user.id
       }) as string;
     } catch (error) {
       throw error;
@@ -322,8 +349,17 @@ class TauriApiService {
       if (!this.invoke) {
         throw new Error('Tauri invoke function not available');
       }
+      
+      // Get current user from localStorage
+      const userStr = localStorage.getItem('user');
+      if (!userStr) {
+        throw new Error('User not found in session');
+      }
+      const user = JSON.parse(userStr);
+      
       const result = await this.invoke('create_supply', {
-        request: supplyData
+        request: supplyData,
+        user_id: user.id
       }) as string;
       
       // Clear related caches
@@ -342,11 +378,20 @@ class TauriApiService {
       if (!this.invoke) {
         throw new Error('Tauri invoke function not available');
       }
+      
+      // Get current user from localStorage
+      const userStr = localStorage.getItem('user');
+      if (!userStr) {
+        throw new Error('User not found in session');
+      }
+      const user = JSON.parse(userStr);
+      
       const result = await this.invoke('update_supply', {
         request: {
           id: supplyId,
           ...supplyData
-        }
+        },
+        user_id: user.id
       }) as string;
       
       // Clear related caches
@@ -365,7 +410,18 @@ class TauriApiService {
       if (!this.invoke) {
         throw new Error('Tauri invoke function not available');
       }
-      return await this.invoke('delete_supply', { supply_id: supplyId }) as string;
+      
+      // Get current user from localStorage
+      const userStr = localStorage.getItem('user');
+      if (!userStr) {
+        throw new Error('User not found in session');
+      }
+      const user = JSON.parse(userStr);
+      
+      return await this.invoke('delete_supply', { 
+        supply_id: supplyId,
+        user_id: user.id
+      }) as string;
     } catch (error) {
       throw error;
     }
@@ -377,7 +433,18 @@ class TauriApiService {
       if (!this.invoke) {
         throw new Error('Tauri invoke function not available');
       }
-      return await this.invoke('delete_supply_history', { history_id: historyId }) as string;
+      
+      // Get current user from localStorage
+      const userStr = localStorage.getItem('user');
+      if (!userStr) {
+        throw new Error('User not found in session');
+      }
+      const user = JSON.parse(userStr);
+      
+      return await this.invoke('delete_supply_history', { 
+        history_id: historyId,
+        user_id: user.id
+      }) as string;
     } catch (error) {
       throw error;
     }
