@@ -279,6 +279,7 @@ This software includes logos from the University of Santo Tomas and the College 
 - **In-App Support**: Use the Support page within the application
 - **Email Support**: Contact your system administrator
 - **Local Documentation**: See [DOCUMENTATION.md](DOCUMENTATION.md) for detailed guides
+- **Data Backup**: See [BACKUP_GUIDE.md](BACKUP_GUIDE.md) for backup and recovery procedures
 - **Troubleshooting**: Check the [Troubleshooting](#-troubleshooting) section above
 
 ## 🗺️ Roadmap
