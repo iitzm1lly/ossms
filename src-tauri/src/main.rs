@@ -1,5 +1,5 @@
 // Prevents additional console window on Windows, DO NOT REMOVE!!
-#![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
+// #![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
 
 mod database;
 
@@ -614,12 +614,27 @@ async fn send_reset_email(email: &str, token: &str, username: &str) -> Result<()
 }
 
 fn main() {
+    println!("Starting OSSMS Desktop application...");
+    
     // Initialize database with optimizations
-    let database = Database::new().expect("Failed to initialize database");
+    println!("Initializing database...");
+    let database = match Database::new() {
+        Ok(db) => {
+            println!("Database initialized successfully");
+            db
+        },
+        Err(e) => {
+            eprintln!("Failed to initialize database: {}", e);
+            std::process::exit(1);
+        }
+    };
+    
+    println!("Setting up app state...");
     let app_state = AppState {
         db: Mutex::new(database),
     };
 
+    println!("Starting Tauri application...");
     tauri::Builder::default()
         .manage(app_state)
         .invoke_handler(tauri::generate_handler![
