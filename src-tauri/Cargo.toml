@@ -54,7 +54,7 @@ rpath = false
 
 # Windows subsystem configuration to prevent console window
 [target.'cfg(windows)'.build]
-rustflags = ["-C", "target-feature=+crt-static", "-C", "link-args=/SUBSYSTEM:WINDOWS"]
+rustflags = ["-C", "target-feature=+crt-static"]
 
 [profile.dev]
 opt-level = 1
