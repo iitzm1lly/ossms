@@ -27,6 +27,6 @@ npm install
 
 # Step 5: Build the application in release mode
 Write-Host "🔨 Building application in release mode..." -ForegroundColor Yellow
-npm run tauri:build -- --release
+npm run tauri:build
 
 Write-Host "✅ Clean build completed!" -ForegroundColor Green 
