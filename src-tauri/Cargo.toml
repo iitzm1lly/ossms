@@ -50,6 +50,7 @@ panic = "abort"
 strip = true
 debug = false
 overflow-checks = false
+rpath = false
 
 # Windows subsystem configuration to prevent console window
 [target.'cfg(windows)'.build]
