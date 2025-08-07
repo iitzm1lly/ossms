@@ -253,8 +253,6 @@ impl Database {
     }
 
     fn insert_default_admin(&self) -> Result<()> {
-        println!("Checking for existing admin user...");
-        
         // Check if admin user already exists
         let count: i32 = self.conn.query_row(
             "SELECT COUNT(*) FROM users WHERE username = ?",
@@ -373,10 +371,7 @@ impl Database {
     }
 
     pub fn verify_password(&self, username: &str, password: &str) -> Result<bool> {
-        println!("Verifying password for user: {}", username);
-        
         if let Some(user) = self.get_user_by_username(username)? {
-            println!("User found, verifying password...");
             let is_valid = verify(password, &user.password)
                 .map_err(|e| rusqlite::Error::InvalidParameterName(e.to_string()))?;
             Ok(is_valid)
