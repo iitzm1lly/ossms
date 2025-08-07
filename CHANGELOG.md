@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Space-Optimized PDFs**: Reduced margins, padding, and font sizes for better content density
 - **Institutional Branding**: Added UST and CICS logos to PDF reports
 - **Improved Report Filtering**: Low stock reports now correctly filter to show only low stock items
+- **Chart Spacing Optimization**: Improved text spacing and readability in history dashboard charts
 
 ### Changed
 - **Stock Status Logic**: Fixed inconsistent calculations that caused items like AA Batteries (18 pieces) to show incorrect status
@@ -21,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Report Content**: Updated summary sections to reflect only relevant data (low stock items only)
 - **Debug Information**: Removed all debug console logs and test files for cleaner production code
 - **Typography**: Optimized font sizes and spacing in PDF reports for better readability
+- **Chart Layout**: Enhanced chart margins, font sizes, and container heights for better text spacing
 
 ### Fixed
 - **Stock Status Consistency**: All components now use the same calculation logic
@@ -28,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **PDF Layout**: Improved space usage and content density in reports
 - **User Interface**: Added helpful tooltips explaining stock status thresholds
 - **Code Cleanliness**: Removed obsolete debug files and console statements
+- **Chart Readability**: Fixed cramped text spacing in history dashboard charts, especially x-axis labels
 
 ## [1.0.0] - 2024-01-XX
 
