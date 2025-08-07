@@ -2,7 +2,6 @@
 linker = "link.exe"
 rustflags = [
     "-C", "link-arg=/NOLOGO",
-    "-C", "link-arg=/SUBSYSTEM:CONSOLE",
     "-C", "link-arg=/MACHINE:X64"
 ]
 
