@@ -931,7 +931,7 @@ impl Database {
             ))
         }).optional()?;
         
-        let (history_id_str, supply_id, supply_name, action, notes) = if let Some(info) = history_info {
+        let (_history_id_str, supply_id, supply_name, action, _notes) = if let Some(info) = history_info {
             info
         } else {
             return Err(rusqlite::Error::InvalidParameterName("History record not found".to_string()));
