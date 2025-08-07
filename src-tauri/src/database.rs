@@ -139,7 +139,7 @@ impl Database {
             PRAGMA foreign_keys = ON;
         ")?;
         
-        println!("Database connection opened successfully");
+        // Database connection opened successfully
         
         let db = Database { 
             conn, 
@@ -153,7 +153,6 @@ impl Database {
         
         // Only seed sample data on fresh install or if no sample data exists
         if is_fresh_install {
-            println!("Fresh installation detected, seeding sample data...");
             db.seed_sample_data_automatically()?;
         } else {
             // Check if sample data exists, seed if not
@@ -164,7 +163,6 @@ impl Database {
     }
 
     fn init_tables(&self) -> Result<()> {
-        println!("Initializing database tables...");
         
         // Users table
         self.conn.execute(
@@ -182,7 +180,6 @@ impl Database {
             )",
             [],
         )?;
-        println!("Users table created/verified");
 
         // Supplies table
         self.conn.execute(
@@ -222,7 +219,6 @@ impl Database {
         // Add variation and brand columns if they don't exist (for existing databases)
         let _ = self.conn.execute("ALTER TABLE supplies ADD COLUMN variation TEXT", []);
         let _ = self.conn.execute("ALTER TABLE supplies ADD COLUMN brand TEXT", []);
-        println!("Supplies table created/verified");
 
         // Supply history table
         self.conn.execute(
@@ -239,7 +235,6 @@ impl Database {
             )",
             [],
         )?;
-        println!("Supply history table created/verified");
 
         // Password reset tokens table
         self.conn.execute(
@@ -253,7 +248,6 @@ impl Database {
             )",
             [],
         )?;
-        println!("Password reset tokens table created/verified");
 
         Ok(())
     }
@@ -268,10 +262,7 @@ impl Database {
             |row| row.get(0)
         )?;
 
-        println!("Found {} existing admin users", count);
-
         if count == 0 {
-            println!("Creating default admin user...");
             let hashed_password = hash("password", DEFAULT_COST)
                 .map_err(|e| rusqlite::Error::InvalidParameterName(e.to_string()))?;
             let now = chrono::Utc::now().to_rfc3339();
@@ -300,9 +291,6 @@ impl Database {
                     now
                 ],
             )?;
-            println!("Default admin user created successfully");
-        } else {
-            println!("Admin user already exists, skipping creation");
         }
 
         Ok(())
@@ -391,10 +379,8 @@ impl Database {
             println!("User found, verifying password...");
             let is_valid = verify(password, &user.password)
                 .map_err(|e| rusqlite::Error::InvalidParameterName(e.to_string()))?;
-            println!("Password verification result: {}", is_valid);
             Ok(is_valid)
         } else {
-            println!("User not found: {}", username);
             Ok(false)
         }
     }
@@ -850,11 +836,7 @@ impl Database {
         
         // If sample data doesn't exist, seed it
         if sample_supply_count == 0 {
-            println!("Seeding sample data automatically...");
             self.seed_sample_data_internal()?;
-            println!("Sample data seeded successfully!");
-        } else {
-            println!("Sample data already exists, skipping automatic seeding.");
         }
         
         Ok(())
@@ -872,9 +854,10 @@ impl Database {
         
         // Sample users
         let sample_users = vec![
-            ("john.doe", "password123", "John", "Doe", "john.doe@company.com", "staff", r#"{"supplies": ["view", "create", "edit"], "supply_histories": ["view", "create"], "reports": ["view"]}"#),
-            ("jane.smith", "password123", "Jane", "Smith", "jane.smith@company.com", "staff", r#"{"supplies": ["view", "create", "edit"], "supply_histories": ["view", "create"], "reports": ["view"]}"#),
-            ("bob.wilson", "password123", "Bob", "Wilson", "bob.wilson@company.com", "viewer", r#"{"supplies": ["view"], "supply_histories": ["view"], "reports": ["view"]}"#),
+            ("abbarcelo", "password123", "Arne B.", "Barcelo", "abbarcelo@ust.edu.ph", "admin", r#"{"users": ["view", "create", "edit", "delete"], "supplies": ["view", "create", "edit", "delete"], "supply_histories": ["view", "create", "edit", "delete"], "reports": ["view"]}"#),
+            ("mgkho", "password123", "Madonna G.", "Kho", "mgkho@ust.edu.ph", "staff", r#"{"supplies": ["view", "create", "edit"], "supply_histories": ["view", "create"], "reports": ["view"]}"#),
+            ("rpgonzaga", "password123", "Roma Faith P.", "Gonzaga", "rpgonzaga@ust.edu.ph", "staff", r#"{"supplies": ["view", "create", "edit"], "supply_histories": ["view", "create"], "reports": ["view"]}"#),
+            ("abgarcia", "password123", "Aristotle B.", "Garcia", "abgarcia@ust.edu.ph", "staff", r#"{"supplies": ["view", "create", "edit"], "supply_histories": ["view", "create"], "reports": ["view"]}"#),
         ];
         
         for (username, password, firstname, lastname, email, role, permissions) in sample_users {
@@ -897,25 +880,25 @@ impl Database {
         }
         
         // Get other user IDs after they're created
-        let john_user = self.get_user_by_username("john.doe")?;
-        let john_id = if let Some(user) = john_user {
+        let mgkho_user = self.get_user_by_username("mgkho")?;
+        let mgkho_id = if let Some(user) = mgkho_user {
             user.id
         } else {
-            return Err(rusqlite::Error::InvalidParameterName("John user not found".to_string()));
+            return Err(rusqlite::Error::InvalidParameterName("Madonna Kho user not found".to_string()));
         };
         
-        let jane_user = self.get_user_by_username("jane.smith")?;
-        let jane_id = if let Some(user) = jane_user {
+        let rpgonzaga_user = self.get_user_by_username("rpgonzaga")?;
+        let rpgonzaga_id = if let Some(user) = rpgonzaga_user {
             user.id
         } else {
-            return Err(rusqlite::Error::InvalidParameterName("Jane user not found".to_string()));
+            return Err(rusqlite::Error::InvalidParameterName("Roma Faith Gonzaga user not found".to_string()));
         };
         
-        let bob_user = self.get_user_by_username("bob.wilson")?;
-        let bob_id = if let Some(user) = bob_user {
+        let abgarcia_user = self.get_user_by_username("abgarcia")?;
+        let abgarcia_id = if let Some(user) = abgarcia_user {
             user.id
         } else {
-            return Err(rusqlite::Error::InvalidParameterName("Bob user not found".to_string()));
+            return Err(rusqlite::Error::InvalidParameterName("Aristotle Garcia user not found".to_string()));
         };
         
         // Sample supplies with balanced stock levels (Low, Moderate, High)
@@ -1074,17 +1057,17 @@ impl Database {
         // Additional supply history records for testing with realistic dates and different users
         let additional_history = vec![
             ("A4 Bond Paper", "Stock Out", 100, "Meeting room supplies", 75, &admin_id), // 75 days ago
-            ("Blue Ballpoint Pens", "Stock Out", 24, "IT department", 60, &john_id), // 60 days ago
-            ("Binder Clips", "Stock In", 100, "Restock order", 45, &jane_id), // 45 days ago
-            ("Black Markers", "Stock Out", 20, "Training session", 30, &bob_id), // 30 days ago
+            ("Blue Ballpoint Pens", "Stock Out", 24, "IT department", 60, &mgkho_id), // 60 days ago
+            ("Binder Clips", "Stock In", 100, "Restock order", 45, &rpgonzaga_id), // 45 days ago
+            ("Black Markers", "Stock Out", 20, "Training session", 30, &abgarcia_id), // 30 days ago
             ("Coffee Beans", "Stock Out", 2, "Weekly consumption", 20, &admin_id), // 20 days ago
-            ("Sticky Notes", "Stock In", 24, "Emergency order", 15, &john_id), // 15 days ago
-            ("USB Flash Drives", "Stock Out", 5, "IT department", 10, &jane_id), // 10 days ago
-            ("A4 Bond Paper", "Stock Out", 50, "Office supplies", 7, &bob_id), // 7 days ago
+            ("Sticky Notes", "Stock In", 24, "Emergency order", 15, &mgkho_id), // 15 days ago
+            ("USB Flash Drives", "Stock Out", 5, "IT department", 10, &rpgonzaga_id), // 10 days ago
+            ("A4 Bond Paper", "Stock Out", 50, "Office supplies", 7, &abgarcia_id), // 7 days ago
             ("Blue Ballpoint Pens", "Stock In", 36, "Monthly restock", 5, &admin_id), // 5 days ago
-            ("Binder Clips", "Stock Out", 50, "Department request", 3, &john_id), // 3 days ago
-            ("Coffee Beans", "Stock In", 3, "Weekly restock", 2, &jane_id), // 2 days ago
-            ("Black Markers", "Stock Out", 10, "New employee setup", 1, &bob_id), // 1 day ago
+            ("Binder Clips", "Stock Out", 50, "Department request", 3, &mgkho_id), // 3 days ago
+            ("Coffee Beans", "Stock In", 3, "Weekly restock", 2, &rpgonzaga_id), // 2 days ago
+            ("Black Markers", "Stock Out", 10, "New employee setup", 1, &abgarcia_id), // 1 day ago
         ];
         
         for (supply_name, action, quantity, notes, days_ago, user_id) in additional_history {
@@ -1190,7 +1173,6 @@ impl Database {
             )?;
         }
         
-        println!("Recalculated stock status for {} supplies", supplies.len());
         Ok(())
     }
 
