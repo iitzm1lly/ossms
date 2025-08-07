@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Institutional Branding**: Added UST and CICS logos to PDF reports
 - **Improved Report Filtering**: Low stock reports now correctly filter to show only low stock items
 - **Chart Spacing Optimization**: Improved text spacing and readability in history dashboard charts
+- **Updated Sample Data**: Replaced generic sample users with UST-specific user details for the following individuals (Arne B. Barcelo, Madonna G. Kho, Roma Faith P. Gonzaga, Aristotle B. Garcia)
 
 ### Changed
 - **Stock Status Logic**: Fixed inconsistent calculations that caused items like AA Batteries (18 pieces) to show incorrect status
