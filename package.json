@@ -12,7 +12,7 @@
     "lint": "next lint",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build --release",
+    "tauri:build": "tauri build",
     "tauri:build:clean": "rimraf .next out dist && npm run tauri:build",
     "tauri:build:fresh": "rimraf .next out dist node_modules/.cache && npm run tauri:build"
   },
