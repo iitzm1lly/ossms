@@ -49,6 +49,10 @@ codegen-units = 1
 panic = "abort"
 strip = true
 
+# Windows subsystem configuration to prevent console window
+[target.'cfg(windows)'.build]
+rustflags = ["-C", "target-feature=+crt-static", "-C", "link-args=/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup"]
+
 [profile.dev]
 opt-level = 1
 codegen-units = 16
