@@ -160,8 +160,17 @@ async fn get_users(state: State<'_, AppState>) -> Result<Vec<User>, String> {
 async fn create_user(
     state: State<'_, AppState>,
     request: CreateUserRequest,
+    user_id: String,
 ) -> Result<String, String> {
     let db = state.db.lock().map_err(|_| "Database lock failed")?;
+    
+    // Get current user from the passed user_id
+    let current_user = db.get_user_by_id(&user_id).map_err(|e| format!("Failed to get current user: {}", e))?;
+    let user_id_for_history = if let Some(user) = current_user {
+        user.id
+    } else {
+        return Err("Current user not found".to_string());
+    };
     
     let user = User {
         id: uuid::Uuid::new_v4().to_string(),
@@ -176,18 +185,27 @@ async fn create_user(
         updated_at: chrono::Utc::now().to_rfc3339(),
     };
     
-    db.create_user(&user).map_err(|e| format!("Database error: {}", e))
+    db.create_user(&user, &user_id_for_history).map_err(|e| format!("Database error: {}", e))
 }
 
 #[tauri::command]
 async fn update_user(
     state: State<'_, AppState>,
     request: database::UpdateUserRequest,
+    user_id: String,
 ) -> Result<String, String> {
     let db = state.db.lock().map_err(|_| "Database lock failed")?;
     
+    // Get current user from the passed user_id
+    let current_user = db.get_user_by_id(&user_id).map_err(|e| format!("Failed to get current user: {}", e))?;
+    let user_id_for_history = if let Some(user) = current_user {
+        user.id
+    } else {
+        return Err("Current user not found".to_string());
+    };
+    
     // Update the user directly by ID
-    db.update_user(&request.id, &request).map_err(|e| format!("Database error: {}", e))?;
+    db.update_user(&request.id, &request, &user_id_for_history).map_err(|e| format!("Database error: {}", e))?;
     Ok("User updated successfully".to_string())
 }
 
@@ -201,8 +219,17 @@ async fn get_supplies(state: State<'_, AppState>) -> Result<Vec<Supply>, String>
 async fn create_supply(
     state: State<'_, AppState>,
     request: CreateSupplyRequest,
+    user_id: String,
 ) -> Result<String, String> {
     let db = state.db.lock().map_err(|_| "Database lock failed")?;
+    
+    // Get current user from the passed user_id
+    let current_user = db.get_user_by_id(&user_id).map_err(|e| format!("Failed to get current user: {}", e))?;
+    let user_id_for_history = if let Some(user) = current_user {
+        user.id
+    } else {
+        return Err("Current user not found".to_string());
+    };
     
     let supply = Supply {
         id: uuid::Uuid::new_v4().to_string(),
@@ -227,22 +254,23 @@ async fn create_supply(
         updated_at: chrono::Utc::now().to_rfc3339(),
     };
     
-    db.create_supply(&supply).map_err(|e| format!("Database error: {}", e))
+    db.create_supply(&supply, &user_id_for_history).map_err(|e| format!("Database error: {}", e))
 }
 
 #[tauri::command]
 async fn update_supply(
     state: State<'_, AppState>,
     request: UpdateSupplyRequest,
+    user_id: String,
 ) -> Result<String, String> {
     let db = state.db.lock().map_err(|_| "Database lock failed")?;
     
-    // Get current user from the request context (using abbarcelo as admin user)
-    let admin_user = db.get_user_by_username("abbarcelo").map_err(|e| format!("Failed to get admin user: {}", e))?;
-    let user_id = if let Some(user) = admin_user {
+    // Get current user from the passed user_id
+    let current_user = db.get_user_by_id(&user_id).map_err(|e| format!("Failed to get current user: {}", e))?;
+    let user_id_for_history = if let Some(user) = current_user {
         user.id
     } else {
-        return Err("Admin user not found".to_string());
+        return Err("Current user not found".to_string());
     };
     
     // Get current supply to calculate quantity changes
@@ -288,7 +316,7 @@ async fn update_supply(
             previous_quantity: current_quantity,
             new_quantity: new_quantity,
             notes: Some(notes),
-            user_id: user_id,
+            user_id: user_id_for_history,
             created_at: chrono::Utc::now().to_rfc3339(),
         };
         
@@ -304,7 +332,7 @@ async fn update_supply(
             previous_quantity: current_quantity,
             new_quantity: current_quantity,
             notes: Some("Item details updated".to_string()),
-            user_id: user_id,
+            user_id: user_id_for_history,
             created_at: chrono::Utc::now().to_rfc3339(),
         };
         
@@ -324,9 +352,10 @@ async fn get_supply_histories(state: State<'_, AppState>) -> Result<Vec<Enriched
 async fn delete_supply(
     state: State<'_, AppState>,
     supply_id: String,
+    user_id: String,
 ) -> Result<String, String> {
     let db = state.db.lock().map_err(|_| "Database lock failed")?;
-    db.delete_supply(&supply_id).map_err(|e| format!("Database error: {}", e))?;
+    db.delete_supply(&supply_id, &user_id).map_err(|e| format!("Database error: {}", e))?;
     Ok("Supply deleted successfully".to_string())
 }
 
@@ -334,9 +363,19 @@ async fn delete_supply(
 async fn delete_supply_history(
     state: State<'_, AppState>,
     history_id: String,
+    user_id: String,
 ) -> Result<String, String> {
     let db = state.db.lock().map_err(|_| "Database lock failed")?;
-    db.delete_supply_history(&history_id).map_err(|e| format!("Database error: {}", e))?;
+    
+    // Get current user from the passed user_id
+    let current_user = db.get_user_by_id(&user_id).map_err(|e| format!("Failed to get current user: {}", e))?;
+    let user_id_for_history = if let Some(user) = current_user {
+        user.id
+    } else {
+        return Err("Current user not found".to_string());
+    };
+    
+    db.delete_supply_history(&history_id, &user_id_for_history).map_err(|e| format!("Database error: {}", e))?;
     Ok("Supply history deleted successfully".to_string())
 }
 
@@ -492,8 +531,17 @@ async fn reset_password(
 async fn delete_user(
     state: State<'_, AppState>,
     user_id: String,
+    current_user_id: String,
 ) -> Result<String, String> {
     let db = state.db.lock().map_err(|_| "Database lock failed")?;
+    
+    // Get current user from the passed current_user_id
+    let current_user = db.get_user_by_id(&current_user_id).map_err(|e| format!("Failed to get current user: {}", e))?;
+    let user_id_for_history = if let Some(user) = current_user {
+        user.id
+    } else {
+        return Err("Current user not found".to_string());
+    };
     
     // In a real application, you might want to:
     // 1. Check if user exists
@@ -501,7 +549,7 @@ async fn delete_user(
     // 3. Soft delete instead of hard delete
     
     // For now, we'll just delete the user
-    db.delete_user(&user_id).map_err(|e| format!("Database error: {}", e))?;
+    db.delete_user(&user_id, &user_id_for_history).map_err(|e| format!("Database error: {}", e))?;
     Ok("User deleted successfully".to_string())
 }
 
