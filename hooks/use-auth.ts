@@ -26,7 +26,6 @@ export function useAuth() {
               // Update localStorage with parsed permissions
               localStorage.setItem("user", JSON.stringify(userData))
             } catch (error) {
-              console.error('Error parsing permissions:', error)
               userData.permissions = {}
             }
           }
@@ -34,7 +33,6 @@ export function useAuth() {
           setUser(userData)
           setIsLoggedIn(true)
         } catch (error) {
-          console.error("Error parsing user data:", error)
           localStorage.removeItem("user")
           localStorage.removeItem("isLoggedIn")
         }
@@ -58,7 +56,6 @@ export function useAuth() {
           try {
             userData.permissions = JSON.parse(userData.permissions)
           } catch (error) {
-            console.error('Error parsing permissions:', error)
             userData.permissions = {}
           }
         }
