@@ -8,6 +8,7 @@ A modern, cross-platform desktop application for managing office supplies and in
 - **Inventory Management**: Track supplies, quantities, and locations with intelligent stock status calculation
 - **Stock Movement**: Monitor stock in/out with detailed history and user attribution
 - **Advanced Reporting**: Generate low-stock alerts and movement reports with modern PDF exports
+- **Data Visualization**: Interactive charts and graphs for stock movement analysis
 - **Email Notifications**: Password reset functionality with SMTP support
 - **Cross-Platform**: Works on Windows, macOS, and Linux
 - **Offline-First**: Local SQLite database for reliable operation
