@@ -237,8 +237,8 @@ async fn update_supply(
 ) -> Result<String, String> {
     let db = state.db.lock().map_err(|_| "Database lock failed")?;
     
-    // Get current user from the request context (for now, we'll use admin)
-    let admin_user = db.get_user_by_username("admin").map_err(|e| format!("Failed to get admin user: {}", e))?;
+    // Get current user from the request context (using abbarcelo as admin user)
+    let admin_user = db.get_user_by_username("abbarcelo").map_err(|e| format!("Failed to get admin user: {}", e))?;
     let user_id = if let Some(user) = admin_user {
         user.id
     } else {
