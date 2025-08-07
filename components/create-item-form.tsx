@@ -168,7 +168,6 @@ export function CreateItemForm() {
         throw new Error("Failed to create item")
       }
     } catch (error: any) {
-      console.error("Error creating item:", error)
       setError(error.message || "An unexpected error occurred")
       toast({
         title: "Error",
