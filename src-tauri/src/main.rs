@@ -28,8 +28,8 @@ use rand::Rng;
 // ============================================================================
 
 // Hardcoded email configuration
-const SMTP_EMAIL: &str = "your-email@gmail.com";  // Replace with your email
-const SMTP_PASSWORD: &str = "your-app-password";  // Replace with your app password
+const SMTP_EMAIL: &str = "jaisenmillard.villegas.cics@ust.edu.ph";  // Replace with your email
+const SMTP_PASSWORD: &str = "jdyivmsvifidepgd";  // Replace with your app password
 
 // App state with connection pooling
 struct AppState {
@@ -357,8 +357,7 @@ async fn forgot_password(
     state: State<'_, AppState>,
     request: ForgotPasswordRequest,
 ) -> Result<ForgotPasswordResponse, String> {
-    println!("=== FORGOT PASSWORD REQUEST ===");
-    println!("Email: {}", request.email);
+    // Debug logging removed for production
     
     // First, get the user and create the token while holding the lock
     let (user, token) = {
@@ -370,11 +369,8 @@ async fn forgot_password(
         // Check if user exists with the provided email
         match db.get_user_by_email(&request.email) {
             Ok(Some(user)) => {
-                println!("User found: {} ({})", user.username, user.email);
-                
                 // Generate a reset token
                 let token = generate_reset_token();
-                println!("Generated token: {}", token);
                 
                 // Set expiration to 1 hour from now
                 let expires_at = chrono::Utc::now() + chrono::Duration::hours(1);
@@ -384,19 +380,15 @@ async fn forgot_password(
                 db.create_password_reset_token(&user.id, &token, &expires_at_str)
                     .map_err(|e| format!("Failed to create reset token: {}", e))?;
                 
-                println!("Token stored in database successfully");
-                
                 Ok::<(database::User, String), String>((user, token))
             }
             Ok(None) => {
-                println!("No user found with email: {}", request.email);
                 return Ok(ForgotPasswordResponse { 
                     success: false, 
                     error: Some("No user found with this email address".to_string()) 
                 });
             }
             Err(e) => {
-                println!("Database error: {}", e);
                 return Ok(ForgotPasswordResponse { 
                     success: false, 
                     error: Some(format!("Database error: {}", e)) 
@@ -406,12 +398,9 @@ async fn forgot_password(
     }?;
     
     // Now send the email without holding the database lock
-    println!("Sending reset email...");
     send_reset_email(&request.email, &token, &user.username)
         .await
         .map_err(|e| format!("Failed to send email: {}", e))?;
-    
-    println!("=== FORGOT PASSWORD SUCCESS ===");
     
     Ok(ForgotPasswordResponse { 
         success: true, 
@@ -562,12 +551,6 @@ async fn send_reset_email(email: &str, token: &str, username: &str) -> Result<()
         .map_err(|e| format!("Failed to create email: {}", e))?;
 
     // Use hardcoded credentials for easier setup
-    println!("=== SENDING EMAIL ===");
-    println!("To: {}", email);
-    println!("Subject: OSSMS Password Reset");
-    println!("Token: {}", token);
-    println!("========================");
-    
     let creds = Credentials::new(SMTP_EMAIL.to_string(), SMTP_PASSWORD.to_string());
     
     let mailer = SmtpTransport::relay("smtp.gmail.com")
@@ -577,8 +560,6 @@ async fn send_reset_email(email: &str, token: &str, username: &str) -> Result<()
 
     mailer.send(&email_message)
         .map_err(|e| format!("Failed to send email: {}", e))?;
-        
-    println!("Email sent successfully!");
 
     Ok(())
 }
