@@ -230,7 +230,7 @@ export default function ViewItemsPage() {
           })
         }
       } catch (error) {
-        console.error("Error checking permissions:", error)
+        // Permission check failed silently
       }
     }
     
@@ -247,7 +247,6 @@ export default function ViewItemsPage() {
       )
       setItems(convertedItems)
     } catch (error) {
-      console.error("Error loading items:", error)
       toast.error("Failed to load inventory items")
     } finally {
       setLoading(false)
@@ -283,7 +282,6 @@ export default function ViewItemsPage() {
       setItemToDelete(null)
       loadItems() // Reload the list
     } catch (error) {
-      console.error("Error deleting item:", error)
       toast.error("Failed to delete item")
     }
   }
