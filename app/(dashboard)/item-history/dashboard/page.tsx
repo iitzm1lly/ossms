@@ -67,26 +67,31 @@ interface ItemHistory {
 
 // Helper function to convert EnrichedSupplyHistory to ItemHistory
 const convertSupplyHistoryToItemHistory = (history: any, index: number): ItemHistory => {
-  // Ensure we have a valid ID, fallback to index if history.id is invalid
-  const historyId = parseInt(history.id)
-  const validId = isNaN(historyId) ? index + 1 : historyId
+  // Ensure we have a valid ID, use a more robust approach
+  let validId: number
+  if (history.id && !isNaN(Number(history.id))) {
+    validId = Number(history.id)
+  } else {
+    // Use timestamp + index for unique ID if no valid ID exists
+    validId = Date.now() + index
+  }
   
   return {
     id: validId,
-    name: history.supply_name,
-    item_name: history.supply_name,
-    pieces: history.quantity,
-    quantity: history.quantity,
-    quantity_before: history.previous_quantity,
-    quantity_after: history.new_quantity,
-    before_qty: history.previous_quantity,
-    after_qty: history.new_quantity,
-    performed_by: history.user_name,
-    releaser: history.user_name,
-    releaser_name: history.user_name,
-    created_at: history.created_at,
+    name: history.supply_name || 'Unknown Item',
+    item_name: history.supply_name || 'Unknown Item',
+    pieces: history.quantity || 0,
+    quantity: history.quantity || 0,
+    quantity_before: history.previous_quantity || 0,
+    quantity_after: history.new_quantity || 0,
+    before_qty: history.previous_quantity || 0,
+    after_qty: history.new_quantity || 0,
+    performed_by: history.user_name || 'Unknown User',
+    releaser: history.user_name || 'Unknown User',
+    releaser_name: history.user_name || 'Unknown User',
+    created_at: history.created_at || new Date().toISOString(),
     reason: history.notes || "",
-    action: history.action,
+    action: history.action || "Unknown",
   }
 }
 
@@ -128,11 +133,20 @@ export default function ItemHistoryDashboard() {
             description: "There are no item history records in the database.",
             variant: "destructive",
           })
+          setHistoryData([])
+          setStats({
+            totalRecords: 0,
+            stockInCount: 0,
+            stockOutCount: 0,
+            recentActivity: 0,
+          })
+          setItems([])
+          return
         }
         
         setHistoryData(historyRecords)
         
-        // Calculate stats
+        // Calculate stats with validation
         const stockInCount = historyRecords.filter((record) => record.action === 'Stock In').length
         const stockOutCount = historyRecords.filter((record) => record.action === 'Stock Out').length
         
@@ -140,8 +154,12 @@ export default function ItemHistoryDashboard() {
         const sevenDaysAgo = new Date()
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
         const recentActivity = historyRecords.filter((record) => {
-          const recordDate = new Date(record.created_at)
-          return recordDate >= sevenDaysAgo
+          try {
+            const recordDate = new Date(record.created_at)
+            return recordDate >= sevenDaysAgo
+          } catch (error) {
+            return false
+          }
         }).length
 
         setStats({
@@ -153,30 +171,50 @@ export default function ItemHistoryDashboard() {
 
         // Automatically set date range to cover all data
         if (historyRecords.length > 0) {
-          const dates = historyRecords.map((r: ItemHistory) => new Date(r.created_at))
-          const minDate = new Date(Math.min(...dates.map((d: Date) => d.getTime())))
-          const maxDate = new Date(Math.max(...dates.map((d: Date) => d.getTime())))
-          setDateRange({ from: minDate, to: maxDate })
+          try {
+            const dates = historyRecords
+              .map((r: ItemHistory) => new Date(r.created_at))
+              .filter((date: Date) => !isNaN(date.getTime()))
+            
+            if (dates.length > 0) {
+              const minDate = new Date(Math.min(...dates.map((d: Date) => d.getTime())))
+              const maxDate = new Date(Math.max(...dates.map((d: Date) => d.getTime())))
+              setDateRange({ from: minDate, to: maxDate })
+            }
+          } catch (error) {
+            // If date parsing fails, use current date range
+            const now = new Date()
+            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+            setDateRange({ from: weekAgo, to: now })
+          }
         }
 
-        // Extract unique items
+        // Extract unique items with validation
         const uniqueItems = Array.from(
           new Set(
             historyRecords
-              .filter((item: ItemHistory) => item.name || item.item_name)
-              .map((item: ItemHistory) => item.name || item.item_name),
+              .filter((item: ItemHistory) => item.name && item.name.trim() !== '')
+              .map((item: ItemHistory) => item.name),
           ),
         )
         setItems(uniqueItems as string[])
       } else {
-        throw new Error("Failed to load history data")
+        throw new Error("Failed to load history data - invalid data format")
       }
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to load history data",
+        description: "Failed to load history data. Please try again.",
         variant: "destructive",
       })
+      setHistoryData([])
+      setStats({
+        totalRecords: 0,
+        stockInCount: 0,
+        stockOutCount: 0,
+        recentActivity: 0,
+      })
+      setItems([])
     } finally {
       setIsLoading(false)
       setIsRefreshing(false)
@@ -248,23 +286,43 @@ export default function ItemHistoryDashboard() {
 
   // Prepare data for charts
   const chartData = useMemo(() => {
+    // Validate filtered data
+    if (!filteredData || filteredData.length === 0) {
+      return {
+        timeline: [],
+        itemDistribution: [],
+        actionDistribution: [
+          { name: "Stock In", value: 0, color: "#10b981" },
+          { name: "Stock Out", value: 0, color: "#ef4444" },
+        ],
+        topItems: [],
+      }
+    }
+
     // Group by date for timeline chart
     const timelineData: Record<string, { date: string; stockIn: number; stockOut: number; net: number }> = {}
 
     filteredData.forEach((record) => {
-      const date = new Date(record.created_at).toISOString().split("T")[0]
+      if (!record.created_at) return
+      
+      try {
+        const date = new Date(record.created_at).toISOString().split("T")[0]
+        
+        if (!timelineData[date]) {
+          timelineData[date] = { date, stockIn: 0, stockOut: 0, net: 0 }
+        }
 
-      if (!timelineData[date]) {
-        timelineData[date] = { date, stockIn: 0, stockOut: 0, net: 0 }
-      }
-
-      const quantity = record.quantity || record.pieces || 0
-      if (record.action === "Stock In") {
-        timelineData[date].stockIn += quantity
-        timelineData[date].net += quantity
-      } else {
-        timelineData[date].stockOut += quantity
-        timelineData[date].net -= quantity
+        const quantity = record.quantity || record.pieces || 0
+        if (record.action === "Stock In") {
+          timelineData[date].stockIn += quantity
+          timelineData[date].net += quantity
+        } else if (record.action === "Stock Out") {
+          timelineData[date].stockOut += quantity
+          timelineData[date].net -= quantity
+        }
+      } catch (error) {
+        // Skip invalid dates
+        return
       }
     })
 
@@ -282,7 +340,7 @@ export default function ItemHistoryDashboard() {
       if (record.action === "Stock In") {
         itemDistribution[itemName].stockIn += quantity
         itemDistribution[itemName].net += quantity
-      } else {
+      } else if (record.action === "Stock Out") {
         itemDistribution[itemName].stockOut += quantity
         itemDistribution[itemName].net -= quantity
       }
@@ -488,7 +546,7 @@ export default function ItemHistoryDashboard() {
 
           {/* Charts Section */}
           <div className="space-y-6">
-            <Tabs defaultValue="timeline" className="w-full">
+            <Tabs defaultValue="distribution" className="w-full">
               <TabsList className="grid w-full grid-cols-4 bg-white/80 backdrop-blur-sm border border-white/20">
                 <TabsTrigger value="timeline" className="flex items-center space-x-2">
                   <LineChart className="h-4 w-4" />
@@ -496,7 +554,7 @@ export default function ItemHistoryDashboard() {
                 </TabsTrigger>
                 <TabsTrigger value="distribution" className="flex items-center space-x-2">
                   <BarChart3 className="h-4 w-4" />
-                  <span>Distribution</span>
+                  <span>Item Performance</span>
                 </TabsTrigger>
                 <TabsTrigger value="actions" className="flex items-center space-x-2">
                   <PieChart className="h-4 w-4" />
@@ -517,19 +575,21 @@ export default function ItemHistoryDashboard() {
                     </CardTitle>
                     <CardDescription>Track stock in and out quantities over time</CardDescription>
                   </CardHeader>
-                  <CardContent className="h-[400px]">
+                  <CardContent className="h-[450px]">
                     {chartData.timeline.length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={chartData.timeline} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                        <AreaChart data={chartData.timeline} margin={{ top: 10, right: 40, left: 30, bottom: 20 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                           <XAxis 
                             dataKey="date" 
                             stroke="#6b7280"
-                            fontSize={12}
+                            fontSize={11}
+                            tick={{ fontSize: 10, fill: '#6b7280' }}
                           />
                           <YAxis 
                             stroke="#6b7280"
-                            fontSize={12}
+                            fontSize={11}
+                            tick={{ fontSize: 10, fill: '#6b7280' }}
                           />
                           <Tooltip 
                             contentStyle={{
@@ -589,25 +649,28 @@ export default function ItemHistoryDashboard() {
                     </CardTitle>
                     <CardDescription>Net quantity change for each item</CardDescription>
                   </CardHeader>
-                  <CardContent className="h-[400px]">
+                  <CardContent className="h-[500px]">
                     {chartData.itemDistribution.length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart
                           data={chartData.itemDistribution}
-                          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                          margin={{ top: 10, right: 40, left: 30, bottom: 120 }}
                         >
                           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                           <XAxis 
                             dataKey="name" 
                             stroke="#6b7280"
-                            fontSize={12}
+                            fontSize={11}
                             angle={-45}
                             textAnchor="end"
-                            height={80}
+                            height={120}
+                            interval={0}
+                            tick={{ fontSize: 10, fill: '#6b7280' }}
                           />
                           <YAxis 
                             stroke="#6b7280"
                             fontSize={12}
+                            tick={{ fontSize: 11, fill: '#6b7280' }}
                           />
                           <Tooltip 
                             contentStyle={{
@@ -653,12 +716,12 @@ export default function ItemHistoryDashboard() {
                     </CardTitle>
                     <CardDescription>Distribution of stock in vs stock out transactions</CardDescription>
                   </CardHeader>
-                  <CardContent className="h-[400px]">
-                    {summaryStats.totalTransactions > 0 ? (
+                  <CardContent className="h-[450px]">
+                    {summaryStats.totalTransactions > 0 && chartData.actionDistribution.some(item => item.value > 0) ? (
                       <ResponsiveContainer width="100%" height="100%">
                         <RechartsPieChart>
                           <Pie
-                            data={chartData.actionDistribution}
+                            data={chartData.actionDistribution.filter(item => item.value > 0)}
                             cx="50%"
                             cy="50%"
                             labelLine={true}
@@ -667,7 +730,7 @@ export default function ItemHistoryDashboard() {
                             fill="#8884d8"
                             dataKey="value"
                           >
-                            {chartData.actionDistribution.map((entry, index) => (
+                            {chartData.actionDistribution.filter(item => item.value > 0).map((entry, index) => (
                               <Cell key={`cell-${index}`} fill={entry.color} />
                             ))}
                           </Pie>
