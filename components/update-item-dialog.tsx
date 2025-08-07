@@ -301,7 +301,6 @@ export function UpdateItemDialog({ open, onOpenChange, item, onSuccess }: Update
         onSuccess()
       }
     } catch (error: any) {
-      console.error("Error updating item:", error)
       toast({
         title: "Error",
         description: error.message || "Failed to update item",
