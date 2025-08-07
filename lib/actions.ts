@@ -24,7 +24,6 @@ export const addItem = async (itemData: any) => {
     const response = await apiService.post("/create-item", itemData)
     return { success: true, data: response.data }
   } catch (error: any) {
-    console.error("Error adding item:", error)
     return { success: false, error: error.response?.data?.message || error.message }
   }
 }
@@ -34,7 +33,6 @@ export const updateItem = async (id: number, itemData: any) => {
     const response = await apiService.put(`/update-item/${id}`, itemData)
     return { success: true, data: response.data }
   } catch (error: any) {
-    console.error("API Error updating item:", error)
     return { success: false, error: error.response?.data?.message || error.message }
   }
 }
@@ -44,7 +42,6 @@ export const updateItemStock = async (id: number, stockData: any) => {
     const response = await apiService.put(`/update-item/${id}`, stockData)
     return { success: true, data: response.data }
   } catch (error: any) {
-    console.error("Error updating item stock:", error)
     return { success: false, error: error.response?.data?.message || error.message }
   }
 }
@@ -60,7 +57,6 @@ export const getUsers = async () => {
     const response = await apiService.get("/users")
     return { success: true, data: response.data.users }
   } catch (error: any) {
-    console.error("Error getting users:", error)
     return { success: false, error: error.response?.data?.message || error.message }
   }
 }
@@ -78,7 +74,6 @@ export const createUser = async (userData: {
     const response = await apiService.post("/add-user", userData)
     return { success: true, data: response.data }
   } catch (error: any) {
-    console.error("Error creating user:", error)
     return { success: false, error: error.response?.data?.message || error.message }
   }
 }
@@ -88,7 +83,6 @@ export const updateUser = async (id: number, userData: any) => {
     const response = await apiService.put(`/update-user/${id}`, userData)
     return { success: true, data: response.data }
   } catch (error: any) {
-    console.error("Error updating user:", error)
     return { success: false, error: error.response?.data?.message || error.message }
   }
 }
@@ -99,7 +93,6 @@ export const signIn = async (credentials: { username: string; password: string }
     const response = await apiService.post("/login", credentials)
     return { success: true, data: response.data }
   } catch (error: any) {
-    console.error("Error during sign in:", error)
     return { success: false, error: error.response?.data?.message || error.message }
   }
 }
