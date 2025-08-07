@@ -1,4 +1,5 @@
-// Prevents additional console window on Windows in release, DO NOT REMOVE!!
+// Prevents additional console window on Windows, DO NOT REMOVE!!
+#![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod database;
@@ -36,20 +37,20 @@ struct AppState {
     db: Mutex<Database>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 struct LoginRequest {
     username: String,
     password: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 struct LoginResponse {
     success: bool,
     user: Option<User>,
     error: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 struct CreateUserRequest {
     username: String,
     password: String,
@@ -60,7 +61,7 @@ struct CreateUserRequest {
     permissions: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 struct CreateSupplyRequest {
     name: String,
     description: Option<String>,
@@ -81,12 +82,12 @@ struct CreateSupplyRequest {
     pieces_per_bulk: Option<i32>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 struct ForgotPasswordRequest {
     email: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 struct ResetPasswordRequest {
     email: String,
     token: String,
@@ -340,13 +341,13 @@ async fn delete_supply_history(
     Ok("Supply history deleted successfully".to_string())
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 struct ForgotPasswordResponse {
     success: bool,
     error: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 struct ResetPasswordResponse {
     success: bool,
     error: Option<String>,
