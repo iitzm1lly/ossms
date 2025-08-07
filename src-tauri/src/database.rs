@@ -151,11 +151,8 @@ impl Database {
         // Admin user creation removed - keeping only the 4 custom accounts
         // db.insert_default_admin()?;
         
-        // Only seed sample data on fresh install or if no sample data exists
+        // Only seed sample data on fresh install
         if is_fresh_install {
-            db.seed_sample_data_automatically()?;
-        } else {
-            // Check if sample data exists, seed if not
             db.seed_sample_data_automatically()?;
         }
         
