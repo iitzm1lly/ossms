@@ -944,15 +944,7 @@ impl Database {
 
     // Internal seeding function (moved from main.rs)
     fn seed_sample_data_internal(&self) -> Result<()> {
-        // Get admin user ID for history records (using abbarcelo as admin)
-        let admin_user = self.get_user_by_username("abbarcelo")?;
-        let admin_id = if let Some(user) = admin_user {
-            user.id
-        } else {
-            return Err(rusqlite::Error::InvalidParameterName("Admin user not found".to_string()));
-        };
-        
-        // Sample users
+        // Sample users - create them first
         let sample_users = vec![
             ("abbarcelo", "password123", "Arne B.", "Barcelo", "abbarcelo@ust.edu.ph", "admin", r#"{"users": ["view", "create", "edit", "delete"], "supplies": ["view", "create", "edit", "delete"], "supply_histories": ["view", "create", "edit", "delete"], "reports": ["view"]}"#),
             ("mgkho", "password123", "Madonna G.", "Kho", "mgkho@ust.edu.ph", "staff", r#"{"supplies": ["view", "create", "edit"], "supply_histories": ["view", "create"], "reports": ["view"]}"#),
@@ -960,6 +952,7 @@ impl Database {
             ("abgarcia", "password123", "Aristotle B.", "Garcia", "abgarcia@ust.edu.ph", "staff", r#"{"supplies": ["view", "create", "edit"], "supply_histories": ["view", "create"], "reports": ["view"]}"#),
         ];
         
+        // Create all users first
         for (username, password, firstname, lastname, email, role, permissions) in sample_users {
             let hashed_password = bcrypt::hash(password, bcrypt::DEFAULT_COST)
                 .map_err(|e| rusqlite::Error::InvalidParameterName(format!("Failed to hash password: {}", e)))?;
@@ -979,26 +972,12 @@ impl Database {
             )?;
         }
         
-        // Get other user IDs after they're created
-        let mgkho_user = self.get_user_by_username("mgkho")?;
-        let mgkho_id = if let Some(user) = mgkho_user {
+        // Now get admin user ID for history records (using abbarcelo as admin)
+        let admin_user = self.get_user_by_username("abbarcelo")?;
+        let admin_id = if let Some(user) = admin_user {
             user.id
         } else {
-            return Err(rusqlite::Error::InvalidParameterName("Madonna Kho user not found".to_string()));
-        };
-        
-        let rpgonzaga_user = self.get_user_by_username("rpgonzaga")?;
-        let rpgonzaga_id = if let Some(user) = rpgonzaga_user {
-            user.id
-        } else {
-            return Err(rusqlite::Error::InvalidParameterName("Roma Faith Gonzaga user not found".to_string()));
-        };
-        
-        let abgarcia_user = self.get_user_by_username("abgarcia")?;
-        let abgarcia_id = if let Some(user) = abgarcia_user {
-            user.id
-        } else {
-            return Err(rusqlite::Error::InvalidParameterName("Aristotle Garcia user not found".to_string()));
+            return Err(rusqlite::Error::InvalidParameterName("Admin user not found".to_string()));
         };
         
         // Sample supplies with balanced stock levels (Low, Moderate, High)
@@ -1157,17 +1136,17 @@ impl Database {
         // Additional supply history records for testing with realistic dates and different users
         let additional_history = vec![
             ("A4 Bond Paper", "Stock Out", 100, "Meeting room supplies", 75, &admin_id), // 75 days ago
-            ("Blue Ballpoint Pens", "Stock Out", 24, "IT department", 60, &mgkho_id), // 60 days ago
-            ("Binder Clips", "Stock In", 100, "Restock order", 45, &rpgonzaga_id), // 45 days ago
-            ("Black Markers", "Stock Out", 20, "Training session", 30, &abgarcia_id), // 30 days ago
+            ("Blue Ballpoint Pens", "Stock Out", 24, "IT department", 60, &admin_id), // 60 days ago
+            ("Binder Clips", "Stock In", 100, "Restock order", 45, &admin_id), // 45 days ago
+            ("Black Markers", "Stock Out", 20, "Training session", 30, &admin_id), // 30 days ago
             ("Coffee Beans", "Stock Out", 2, "Weekly consumption", 20, &admin_id), // 20 days ago
-            ("Sticky Notes", "Stock In", 24, "Emergency order", 15, &mgkho_id), // 15 days ago
-            ("USB Flash Drives", "Stock Out", 5, "IT department", 10, &rpgonzaga_id), // 10 days ago
-            ("A4 Bond Paper", "Stock Out", 50, "Office supplies", 7, &abgarcia_id), // 7 days ago
+            ("Sticky Notes", "Stock In", 24, "Emergency order", 15, &admin_id), // 15 days ago
+            ("USB Flash Drives", "Stock Out", 5, "IT department", 10, &admin_id), // 10 days ago
+            ("A4 Bond Paper", "Stock Out", 50, "Office supplies", 7, &admin_id), // 7 days ago
             ("Blue Ballpoint Pens", "Stock In", 36, "Monthly restock", 5, &admin_id), // 5 days ago
-            ("Binder Clips", "Stock Out", 50, "Department request", 3, &mgkho_id), // 3 days ago
-            ("Coffee Beans", "Stock In", 3, "Weekly restock", 2, &rpgonzaga_id), // 2 days ago
-            ("Black Markers", "Stock Out", 10, "New employee setup", 1, &abgarcia_id), // 1 day ago
+            ("Binder Clips", "Stock Out", 50, "Department request", 3, &admin_id), // 3 days ago
+            ("Coffee Beans", "Stock In", 3, "Weekly restock", 2, &admin_id), // 2 days ago
+            ("Black Markers", "Stock Out", 10, "New employee setup", 1, &admin_id), // 1 day ago
         ];
         
         for (supply_name, action, quantity, notes, days_ago, user_id) in additional_history {
